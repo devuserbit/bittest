@@ -212,7 +212,7 @@ class ParseXML:
                 if sub_node.hasChildNodes():
                     for function in sub_node.childNodes:
                         if function.nodeName != "#text":
-                            if(function.nodeName == "stdcmd "):
+                            if(function.nodeName == "stdcmd"):
                                 FunctionsDict['stdcmd'] = True
                             if(function.nodeName == "abort"):
                                 FunctionsDict['abort'] = True
