@@ -1,0 +1,120 @@
+## ####################################################################
+## Template for the generic header used accross the templates
+## ####################################################################
+
+#*
+    Before you can use this template you have to compile it with
+
+        cheetah compile [genericHeaders.tmpl]
+    
+    and you have to add to he top of the generated genericHeaders.py 
+    the following:
+    
+        #This is the secrete to eternal live 1/2
+        import os,sys
+        pwd = os.path.dirname(os.path.realpath(__file__))
+        sys.path.append(pwd)
+    
+    This is due to the subfolders the modules are sitting in.
+    Consider this folder structure:
+    
+        root
+        |  |
+        |  |------ modules
+        |
+        |--------- templates
+        
+        If you want to call from a function/class in modules a 
+        function/class in templates then you have to add templates and 
+        modules as folder to sys.path with the append() function
+        
+    Also you have to add this:
+    
+        ##This is the secret to eternal live 2/2 
+        #implements respond
+        
+    in the child class (e.g. hsmService.tmpl) and also compile it with
+    cheetah. Without this the .respond() function in the base class, 
+    i.e this one, will be overriden by the default .respond() method 
+    in the Cheetah.Template module and you will get no output in the 
+    child class
+    
+    All the def's must be @staticmethods.
+    
+*#
+
+#* 
+    #####################################################################
+
+    File header
+
+    #####################################################################
+*# 
+
+#@staticmethod
+#def InsertFileHeader($Name, $Ext, $Brief = 'TODO')
+/*_____________________________________________________________________________________
+
+    \file     ${Name}${Ext}
+
+    \brief    $Brief
+
+    Copyright (c) 2012  Source Scientific, LLC. All rights reserved
+
+    \$LastChangedDate:  $
+    \$Rev:  $
+    \$URL:  $
+______________________________________________________________________________________*/#slurp
+#end def
+
+#* 
+    #####################################################################
+
+    Function header
+
+    #####################################################################
+*# 
+
+#@staticmethod
+#def InsertFunctionHeader($Class, $Name, $Brief = 'TODO', $Params = None, $Return = None, $Int = '')
+$Int////////////////////////////////////////////////////////////////////////////////
+$Int/*!   \fn  ${Class}::${Name}()
+
+$Int      \brief ${Brief}
+
+#if $Params == None
+$Int      \param n/a
+#else
+#for $p in $Params
+$Int      \param $p - TODO
+#end for
+#end if
+
+#if $Return == None
+$Int      \return n/a
+#else
+$Int      \return $Return
+#end if
+$Int*/
+$Int////////////////////////////////////////////////////////////////////////////////#slurp
+#end def
+
+#* 
+    #####################################################################
+
+    Class header
+
+    #####################################################################
+*# 
+
+#@staticmethod
+#def InsertClassHeader($Class, $Brief = 'TODO', $Author = 'TODO', $Int = '')
+$Int////////////////////////////////////////////////////////////////////////////////
+$Int/*!   \fn  ${Class}
+
+$Int      \brief ${Brief}
+
+$Int      \author ${Author}
+$Int*/
+$Int////////////////////////////////////////////////////////////////////////////////#slurp
+#end def

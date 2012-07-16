@@ -1,0 +1,23 @@
+#*
+    This is the template for the hsm states
+*#
+#from templates import genericHeaders
+#extends genericHeaders.genericHeaders
+#*
+    This is the secret to eternal live 2/2
+    
+    Without this you will get no output from the
+    def's in the parent class
+*#
+#implements respond
+
+## ############################
+## Get file header
+## ############################
+#set $todo      = 'TODO'
+#set $name      = $srv.Name + '.' + 'C' +  $state.Name + 'State'
+$InsertFileHeader($name, $extension, $todo)
+
+
+\#ifndef _${srv.Name.upper()}_C${state.Name.upper()}_H
+\#define _CHSM_${srv.Name.upper()}_SERVICE_H

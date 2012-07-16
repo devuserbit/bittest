@@ -1,0 +1,39 @@
+#*
+    This is the template for the hsm errors header
+*#
+#from templates import genericHeaders
+#extends genericHeaders.genericHeaders
+#*
+    This is the secret to eternal live 2/2
+    
+    Without this you will get no output from the
+    def's in the parent class
+*#
+#implements respond
+
+## ############################
+## Get file header
+## ############################
+#set $todo      = 'TODO'
+#set $name      = $srv.Name + '.Errors'
+$InsertFileHeader($name, $extension, $todo)
+
+// 
+//    This file is included inside enumeration definition, and to create an error name table
+//    inside class definition in the .h of your class
+//    \#include enumdefs.h
+//    enum
+//    {
+//        \#include "${name}${extension}"
+//    };
+// 
+//   and in the .cc create a table errors and their enums
+// 
+//   \#include enumstrdefs.h - MUST BE AFTER INCLUDE OF CLASS HEADER
+//   const static ENUM_STRING Errors[] = 
+//   {
+//      \#include "${name}${extension}"
+//   };
+
+ENUM_SET(UNEXPECTED_ERROR,ERROR_BASE_DEVICE)    // 400 - occurs when .. TODO
+ENUMTERM

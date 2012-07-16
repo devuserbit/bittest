@@ -1,0 +1,155 @@
+#*
+    This is the template for the hsm service
+*#
+#from templates import genericHeaders
+#extends genericHeaders.genericHeaders
+#*
+    This is the secret to eternal live 2/2
+    
+    Without this you will get no output from the
+    def's in the parent class
+*#
+#implements respond
+
+## ############################
+## Get file header
+## ############################
+#set $todo              = 'TODO'
+#set $bmarker           = '#^'
+#set $emarker           = '^#'
+#set $service           = 'Service'
+#set $name              = 'CHSM' + $srv.Name + $service
+#set $params_name       = 'C' + $srv.Name + 'Parameters'
+$InsertFileHeader($name, $extension, $todo)
+
+\#include "${name}.h"
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////  Declare Functions and IOCTLs supported  ///////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Declare functions available
+const SERVICE_FUNCTIONS ${name}::ServiceFunctions[] = 
+{
+    MSG_GET_ERROR_NAME,
+    MSG_ABORT,
+    MSG_RESET,
+    MSG_GET_STATE, 
+    MSG_GET_PARAMS, 
+    MSG_SET_PARAMS,
+    0
+};
+
+// Declare IOCTLS supported
+const IOCTL_FUNCTIONS ${name}::IOCTLFunctions[] =
+{
+    {${name}::PREPARE,            0,  0,  "Prepare",                ""},
+    {${name}::DO_ACTIVITY,        0,  0,  "Do Some Activity ",      ""},
+    IOCTL_FUNCTIONS_TERMINATE
+};
+
+// Size info for functions
+const SERVICE_SIZE_INFO ${name}::SizeInfo =
+{
+    sizeof(${params_name}), sizeof(INT32U),    // Param size,Param Item size,
+                              0,              0,    // Stats Size, Stats Item Size
+                              0,              0,    // Max Data, Max Data Item,
+                                              0};   // Max Control Response size. Needed if this object is ever remote
+
+// Create a table of error values and names
+\#include "enumstrdefs.h"
+const ENUM_STRING ${name}::Errors[] = 
+{
+    \#include "${srv.Name}.Errors.h"
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////  ERROR TRANSLATION TABLE //////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+// Notice we do a catch-all of "Unable to home" on any other error except crash
+// This is called from the function: 
+//
+//          OutputErrorCode = CHSMService::MapResponseCode(INT16U InputErrorCode,INT16U InputInfo1, INT16U InputInfo2)
+//
+// Input Error and Info of the function must match the table entries for the output 
+// code of the table to be output. 
+// INFO_DONT_CARE (0xffff) is reserved to signal not to require a match on that field.
+// 
+const HSM_SERVICE_ERROR_STRUCT ${name}::ErrorMap[] = 
+{
+    // Output Error Code                Input Error Code        Input Info 1          InputInfo 2
+    { ${name}::UNEXPECTED_ERROR,        INFO_DONT_CARE        , INFO_DONT_CARE       ,INFO_DONT_CARE}, // any other error
+    ERROR_STRUCT_TERMINATOR 
+};
+
+
+#set $params        = ['nSrvNo','pServiceName','pTask', 'pControlledObj']
+#set $brief         = 'Set initial vars in construction of object for transport type of service'
+#set $pre_intend    = ' '.rjust(len($name) * 2 + 3)
+$InsertFunctionHeader($name, $name, $brief, $params)
+${name}::${name}(INT16U     nSrvNo,
+${pre_intend}const char *pServiceName,
+${pre_intend}CTask      *pTask,
+${pre_intend}CService   *pControlledObj)
+${pre_intend}: CHSMService(nSrvNo,
+${pre_intend}              pServiceName,
+${pre_intend}              pTask,
+${pre_intend}              NULL,
+${pre_intend}              ErrorMap),
+${pre_intend}// ${bmarker} CTOR_STATES
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+${pre_intend}${State.Name}State(this),
+#end for
+#end for
+${pre_intend}// ${emarker}
+${pre_intend}m_pControlledObj(pControlledObj)
+{
+    // Setup the service information - INCLUDE errors pointer
+    SET_SERVICE_INFO_EXT(ServiceFunctions, IOCTLFunctions, &SizeInfo, &m_Parameters, NULL, Errors);
+}
+
+#set $initial       = None
+#set $sufix         = '_STATE'
+$InsertFunctionHeader($name, 'InitStates', 'Initialize the states', None, 'SYSSTATUS')
+SYSSTATUS $name::InitStates()
+{
+    //
+    // We will initialize all our states
+    // Send the HSM this state belongs, its parent state, and its enumerated state number
+    //
+    // ${bmarker} INIT_STATES
+    SYSSTATUS16 #slurp
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+    nStatus = ${State.Name}State.Init(&PrimaryHSM, #slurp
+#if $State.Parent != None
+&${State.Parent.Name}State, #slurp
+#else
+NULL, #slurp
+#end if
+${State.Name.upper()}${sufix});
+    ASSERT_RETURN_BAD_STATUS(nStatus);
+
+#if $State.Initial == True
+#set $initial = $State.Name
+#end if
+#end for
+#end for
+    // ${emarker}
+
+    // Set initial state of the  main HSM
+    // ${bmarker} INITIAL_STATE
+#if $initial == None
+    // TODO : Initial state not found !!!
+    // nStatus = PrimaryHSM.SetInitialState(this,&RootState);
+#else
+    nStatus = PrimaryHSM.SetInitialState(this,&${initial}State);
+#end if
+    ASSERT_RETURN_BAD_STATUS(nStatus);
+    // ${emarker}
+
+    return nStatus;
+}

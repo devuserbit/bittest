@@ -1,0 +1,222 @@
+#*
+    This is the template for the hsm service
+*#
+#from templates import genericHeaders
+#extends genericHeaders.genericHeaders
+#*
+    This is the secret to eternal live 2/2
+    
+    Without this you will get no output from the
+    def's in the parent class
+*#
+#implements respond
+
+## ############################
+## Get file header
+## ############################
+#set $todo      = 'TODO'
+#set $bmarker   = '#^'
+#set $emarker   = '^#'
+#set $service   = 'Service'
+#set $name      = 'CHSM' + $srv.Name + $service
+$InsertFileHeader($name, $extension, $todo)
+
+
+\#ifndef _CHSM_${srv.Name.upper()}_SERVICE_H
+\#define _CHSM_${srv.Name.upper()}_SERVICE_H
+
+// Include base class service
+\#include "CHSMService.h"
+
+// Include state headers
+// ${bmarker} HEADERS
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+\#include "${srv.Name}.C${$State.Name}State.h"
+#end for
+#end for
+// ${emarker}
+
+
+#*
+## ############################
+## Get class header
+## ############################
+*#
+$InsertClassHeader($name, todo, $author)
+class ${name} : public CHSMService
+{
+public:
+#*
+## ############################
+## Parameters
+## ############################
+*#
+#set $params_name       = 'C' + $srv.Name + 'Parameters'
+#set $name_size         = len($name)
+#set $intent            = '    '
+#set $space             = ' '.rjust($name_size)
+$InsertClassHeader($params_name, todo, $author, $intent)
+    struct ${params_name}:
+    {
+        INT32U  m_nParameter1;
+        INT32U  m_nParameter2;
+
+        //c-tor
+        ${params_name}(INT32U param1 = 0,
+${space} #slurp
+        INT32U param2 = 0): m_nParameter1(param1),
+${space} #slurp
+                            m_nParameter2(param2)
+    
+    };
+    
+    ///////////////////////////////////////////////////////////////////
+    ///////////////////////// DEFINE IOCTLS /////////////////////////// 
+    ///////////////////////////////////////////////////////////////////
+    enum IOCTLS
+    {
+        PREPARE,                 // Prep the system 
+        DO_ACTIVITY,             // Do some activity
+        LAST_IOCTL
+    };
+    
+    ///////////////////////////////////////////////////////////////////
+    ////////////////////////// DEFINE ERRORS //////////////////////////
+    ///////////////////////////////////////////////////////////////////
+    // Error codes for this object
+    \#include "enumdefs.h"
+    enum
+    {
+        \#include "${srv.Name}.Errors.h"
+    };
+    
+    // Constructor Service.  Place in transport stack is optional
+    // By default all services will be place in the service list, for access via PC
+    // Any service not wishing to be visible, should use HIDDEN_SERVICE for nSrvNo
+    ${name}(INT16U      nSrvNo,                 // Service Number for external control
+${space} #slurp
+    const char  *pServiceName,          // Service Name
+${space} #slurp
+    CTask       *pTask,                 // Task for service to run functions
+${space} #slurp
+    CService    *pControlledObj);       // Object this state machine controlls
+
+    ///////////////////////////////////////////////////////////////////
+    //////////////////////////// CONSTANTS ////////////////////////////
+    ///////////////////////////////////////////////////////////////////
+    
+    // TODO
+
+protected:
+
+    
+    ///////////////////////////////////////////////////////////////////
+    ////////////////////////// STATE ENUMS ////////////////////////////
+    ///////////////////////////////////////////////////////////////////
+    enum
+    {
+        // ${bmarker} ENUMS
+#set $state_num     = 0
+#set $sufix         = '_STATE'
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+#set $post_intend = ' '.rjust(32 - (len($State.Name) + len($sufix) - 1))
+        ${State.Name.upper()}${sufix},${post_intend}// ${state_num} - TODO: Decription
+#set $state_num = $state_num + 1
+#end for
+#end for
+        // ${emarker}
+        LAST_STATE
+    } STATE_NUMBERS;
+    
+    
+    ///////////////////////////////////////////////////////////////////
+    //////////////////////// CREATE THE STATES //////////////////////// 
+    ///////////////////////////////////////////////////////////////////
+    
+    
+    // Friend class declaration
+    // make sure our states are friends so they can access this class
+    // Compiler requires the namespace - "using" does not help
+    // ${bmarker} FRIENDS
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+    friend class    ns${srv.Name}${service}::C${State.Name}State;
+#end for
+#end for
+    // ${emarker}
+    
+    
+    // Define states
+    // ${bmarker} DEFINES
+#for $StateList in $srv.StateLevelList
+#for $State in $StateList
+#set $post_intend = ' '.rjust(48 - ((len($srv.Name) + len($service) + 5) + (len($State.Name) + 5)))
+    ns${srv.Name}${service}::C${State.Name}State${post_intend}${State.Name}State;
+#end for
+#end for
+    // ${emarker}
+    
+    // List of our errors and their respective string
+    static const ENUM_STRING Errors[]; 
+    
+    // Error Translation Table
+    static const HSM_SERVICE_ERROR_STRUCT ErrorMap[];
+    
+    ///////////////////////////////////////////////////////////////////
+    //////////////////////////// FUNCTIONS //////////////////////////// 
+    ///////////////////////////////////////////////////////////////////
+
+    // Initialize our states
+    SYSSTATUS InitStates();
+    
+    // Get the object we are controlling
+    CService *GetControlledObj() const
+    {
+        return m_pControlledObj;
+    }
+    
+    // Set the object we are controlling
+    void SetControlledObj(CService *pNewObj)
+    {
+        m_pControlledObj = pNewObj;
+    }
+    
+    // Keep a copy of the command that is being processed so
+    // that we can return status when it finishes
+    void SaveMessage(CServiceMessage *pMsg)
+    {
+        m_ReturnMessage.CopyOrigMsg(pMsg);
+    }
+
+    // Get a pointer to a saved msg
+    CServiceMessage *GetSavedMessage()
+    {
+        return &m_ReturnMessage;
+    }
+    
+    // Accessors for the parameters
+    // TODO : Add get and set function when nedded
+    
+private:
+
+    ///////////////////////////////////////////////////////////////////
+    //////////////////////////// VARIABLES //////////////////////////// 
+    ///////////////////////////////////////////////////////////////////
+    
+    // Configurable parameters of the object
+    ${params_name} m_Parameters;       
+
+    // The current object we're controlling
+    CService *m_pControlledObj;
+
+    // A copy of the incoming msg
+    CServiceMessage m_ReturnMessage;
+
+    // Define the arrays needed for Fingertip and remote communications
+    static const SERVICE_FUNCTIONS ServiceFunctions[];
+    static const IOCTL_FUNCTIONS   IOCTLFunctions[];
+    static const SERVICE_SIZE_INFO SizeInfo;
+};
+\#endif
