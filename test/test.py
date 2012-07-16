@@ -1,4 +1,8 @@
-import XML2Class
+import os,sys
+os.chdir("../")
+sys.path.append(os.getcwd())
+
+from modules import XML2Class
 
 #Start parse process
 XMLReference = XML2Class.ParseXML("default_hsm.xml")
