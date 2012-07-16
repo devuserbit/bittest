@@ -188,11 +188,12 @@ def ScaffoldService(path):
                             'srv'       : HSMStruct,
                             'state'     : State,
                             'extension' : ProjectDefines.FILE_H_EXTENSION,
+                            'author'    : UserName
                             }])
             
             state_h_template = tmpl.respond()
             
-            print state_h_template
+            WriteToFile(file_name,state_h_template)
             
             """ .cc """
             file_name = target_folder + '\\' + HSMStruct.Name + '.' +        \

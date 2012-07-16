@@ -14,10 +14,81 @@
 ## ############################
 ## Get file header
 ## ############################
-#set $todo      = 'TODO'
-#set $name      = $srv.Name + '.' + 'C' +  $state.Name + 'State'
-$InsertFileHeader($name, $extension, $todo)
+#set $todo              = 'TODO'
+#set $service           = 'Service'
+#set $serv_name         = 'CHSM' + $srv.Name + $service
+#set $state_name        = 'C' +  $state.Name + 'State'
+#set $intent            = '    '
+#set $def_fct_key       = {'cmd', 'reset', 'resp', 'event', 'abort', 'timer', 'stdcmd'}
+#set $def_fct           =   {
+                            'cmd'       : 'Command',
+                            'stdcmd'    : 'StdCommand',
+                            'reset'     : 'Reset',
+                            'resp'      : 'Response',
+                            'event'     : 'Event',
+                            'abort'     : 'Abort',
+                            'timer'     : 'Timer'
+                            }
+$InsertFileHeader($state_name, $extension, $todo)
 
 
-\#ifndef _${srv.Name.upper()}_C${state.Name.upper()}_H
-\#define _CHSM_${srv.Name.upper()}_SERVICE_H
+\#ifndef _${srv.Name.upper()}_${state_name.upper()}_H
+\#define _${srv.Name.upper()}_${state_name.upper()}_H
+
+\#include "CHSMServiceState.h"
+
+// Forward declaration
+class ${serv_name};
+
+namespace ns${srv.Name}${service}
+{
+
+$InsertClassHeader($state_name, $todo, $author, $intent)
+    class ${state_name} : public CHSMServiceState
+    {
+    public:
+    
+        // Construct this state, send thing containing service
+        ${state_name}(${serv_name} *pService): CHSMServiceState(),
+                                                   m_pMyService(pService)
+        {
+        }
+        
+        ## ##########################################
+        ## Callbacks
+        ## ##########################################
+#if $state.Callbacks.get('entry') == True
+        HSM_SVC_STATE_RESPONSE  OnEntry(CServiceMessage *pMsg);
+#end if
+#if $state.Callbacks.get('active') == True
+        HSM_SVC_STATE_RESPONSE  OnActive(CServiceMessage *pMsg);
+#end if
+#if $state.Callbacks.get('exit') == True
+        void                    OnEntry();
+#end if
+        
+    protected:
+        
+        ## ##########################################
+        ## Default functions
+        ## ##########################################
+        
+#for $fct in $def_fct_key
+#if $state.Functions.get($fct) == True or $state.Functions.get('all') == True
+        HSM_SVC_STATE_RESPONSE On${def_fct.get($fct)}Msg(CServiceMessage *pMsg);
+#end if 
+#end for
+        
+        // Get function for service pointer
+        ${serv_name} *GetMyService() const
+        {
+            return m_pMyService;
+        }
+
+    private:
+        // Set this state's containing service
+        ${serv_name}  *m_pMyService;
+    
+    };
+}
+#endif
