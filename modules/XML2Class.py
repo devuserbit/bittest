@@ -18,6 +18,7 @@
         1.0     28.06.2012      BMoll           Initial version
         1.1     06.07.2012      BMoll           Enhancements
         1.2     16.07.2012      BMoll           Initial/Dynamic fix
+        1.3     16.07.2012      BMoll           callbacks and std_fcts are now dictionaries
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -172,8 +173,8 @@ class ParseXML:
             Lets use a dict - makes it easier for now """
             
         StateName = ""
-        callbacks = []
-        functions = []
+        CallbackDict = {'entry':False,'active':False,'exit':False}
+        FunctionsDict = {'stdcmd':False,'abort':False,'cmd':False,'reset':False,'timer':False,'all':False}
         Initial = False
         Dynamic = False
 
@@ -199,17 +200,34 @@ class ParseXML:
                 if sub_node.hasChildNodes():
                     for callback in sub_node.childNodes:
                         if callback.nodeName != INVALID_NODE:
-                            callbacks.append(callback.nodeName)
+                            if(callback.nodeName == "entry"):
+                                CallbackDict['entry'] = True
+                            if(callback.nodeName == "active"):
+                                CallbackDict['active'] = True
+                            if(callback.nodeName == "exit"):
+                                CallbackDict['exit'] = True                                
+ 
 
-            if sub_node.nodeName== 'default_fct':
+            if sub_node.nodeName == 'default_fct':
                 if sub_node.hasChildNodes():
                     for function in sub_node.childNodes:
                         if function.nodeName != "#text":
-                            functions.append(function.nodeName)
+                            if(function.nodeName == "stdcmd "):
+                                FunctionsDict['stdcmd'] = True
+                            if(function.nodeName == "abort"):
+                                FunctionsDict['abort'] = True
+                            if(function.nodeName == "reset"):
+                                FunctionsDict['reset'] = True
+                            if(function.nodeName == "timer"):
+                                FunctionsDict['timer'] = True
+                            if(function.nodeName == "cmd"):
+                                FunctionsDict['cmd'] = True
+                            if(function.nodeName == "all"):
+                                FunctionsDict['all'] = True                                    
         
         StateDict = {   'Name': StateName, 
-                        'Callbacks':callbacks, 
-                        'Functions':functions, 
+                        'Callbacks':CallbackDict, 
+                        'Functions':FunctionsDict, 
                         'Initial':Initial, 
                         'Dynamic':Dynamic,
                         'Parent' :ParentNode,
