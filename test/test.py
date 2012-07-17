@@ -35,3 +35,6 @@ def ShowChildren(State):
             ShowChildren(SubState)
 
 ShowChildren(RootState)
+
+
+XMLReference.SetXMLInvalid()
