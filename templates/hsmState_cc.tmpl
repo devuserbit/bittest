@@ -16,7 +16,13 @@
 ## ############################
 #set $todo              = 'TODO'
 #set $service           = 'Service'
+#if $protected == False
+#set $srv_name          = $srv.Name
 #set $serv_name         = 'CHSM' + $srv.Name + $service
+#else
+#set $srv_name          = $srv.Name[1:]
+#set $serv_name         = 'CHSM' + $srv.Name[1:] + $service
+#end if
 #set $state_name        = 'C' +  $state.Name + 'State'
 #set $intent            = '    '
 #set $def_fct_key       = {'cmd', 'reset', 'resp', 'event', 'abort', 'timer', 'stdcmd'}
@@ -46,9 +52,9 @@
 $InsertFileHeader($state_name, $extension, $todo)
 
 \#include "${serv_name}.h"
-\#include "${srv.Name}.${state_name}"
+\#include "${srv_name}.${state_name}"
 
-using namespace ns${srv.Name}${service}
+using namespace ns${srv_name}${service}
 
 ## ############################
 ## OnEntry
@@ -79,14 +85,14 @@ HSM_SVC_STATE_RESPONSE ${state_name}::${callbacks.get($case)}(CServiceMessage *p
 {
     // Handle all the message types
     switch(pMsg->GetMsgType())
-    { #slurp
+    {
 ## Scroll to the callbacks and add those existing
 #for $fct in $def_fct_key
 #if $state.Functions.get($fct) == True or $state.Functions.get('all') == True
         case CServiceMessage::$serv_msg_type.get($fct):
         {
             return On${def_fct.get($fct)}Msg(CServiceMessage *pMsg);
-        } #slurp
+        }
 #else
 ## Add to $leftovers to be added at the end
 $leftover.append($fct)
@@ -117,7 +123,7 @@ $InsertFunctionHeader($state_name, $callbacks.get($case), $comment)
 void ${state_name}::${callbacks.get($case)}()
 {
     // nothing yet
-}#slurp
+}
 #end if
 
 ## ############################

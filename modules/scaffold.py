@@ -35,9 +35,10 @@ from hsm_template import WriteToFile
 from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
+from append_states_to_service import *
 #~ from Cheetah.Template import Template
 
-""" Import templates """
+""" Import precompiled templates """
 from templates import hsmService_h
 from templates import hsmService_cc
 from templates import hsmErrors_h
@@ -57,18 +58,23 @@ from templates import hsmState_cc
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def ScaffoldService(path):
     
-    ServiceName         = ProjectDefines.HSM_DEFAULT_NAME
-    UserName            = ProjectDefines.HSM_DEFAULT_FILLER
+    __function__            = "ScaffoldService()"
+    
+    user_name               = ProjectDefines.HSM_DEFAULT_FILLER
+    service_name            = None
+    
+    """ Protected service starts with '!' """
+    service_is_protected    = False
     
     """ Template defines for the .h and .cc files """
-    cc_template         = None
-    h_template          = None
-    errors_template     = None
-    state_h_template    = None
-    state_cc_template   = None
+    cc_template             = None
+    h_template              = None
+    errors_template         = None
+    state_h_template        = None
+    state_cc_template       = None
     
     if path is None:
-        Print("ScaffoldService: path is None",PrintLevels.CRITICAL) 
+        Print("\nScaffoldService: path is None",PrintLevels.CRITICAL) 
         return ProjectFlags.STATUS_INVALID_PARAMETER
     
     """ 
@@ -82,19 +88,43 @@ def ScaffoldService(path):
     target_folder = os.path.split(path)[0]
     
     if target_folder is None:
-        Print("ScaffoldService: target folder is None",PrintLevels.CRITICAL) 
+        Print("\nScaffoldService: target folder is None",PrintLevels.CRITICAL) 
         return ProjectFlags.STATUS_INVALID_PARAMETER
     
     """ Get the user name """
     try:
-        UserName = getpass.getuser()
+        user_name = getpass.getuser()
     except:
-        Print("\nUnable to get username from system!\n", PrintLevels.DEBUG)
+        Print("\nScaffoldService: Unable to get username from system!\n", PrintLevels.DEBUG)
     
     """ """"""""""""""""""""""""""""""""""""""""""""""""
         
+        CHECK FOR PROTECTION
+        
+        If '!' is in front of the service name that means
+        the service is allready created and we will only
+        add the states which are not proetected with 
+        '!'.
+        For that we are scanning the service .h and .cc
+        for the markers '#^' and '^#'
+        
+    """ """"""""""""""""""""""""""""""""""""""""""""""""
+    if HSMStruct.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is True:
+        
+        Print("\nService : " + HSMStruct.Name[1:] + " is protected!", PrintLevels.INFO)
+        
+        service_name = HSMStruct.Name[1:]
+        service_is_protected = True
+        
+        AppendStatesToService(HSMStruct, target_folder)
+    
+    else:
+        
+        """ """"""""""""""""""""""""""""""""""""""""""""""""
+        
         CREATE SERVICE FILES 
         
+        The service is not protected
         Because we are using compiled templates we have to call them as
         classes
         
@@ -102,65 +132,72 @@ def ScaffoldService(path):
         
         CHSM{Name}Service.cc
         CHSM{Name}Service.h
+            
+        """ """"""""""""""""""""""""""""""""""""""""""""""""
         
-    """ """"""""""""""""""""""""""""""""""""""""""""""""
-    
-    """ .h """
-    file_name = target_folder + '\\' + ProjectDefines.HSM_FILE_PREFIX +    \
-                HSMStruct.Name + ProjectDefines.HSM_FILE_SUFFIX +           \
-                ProjectDefines.FILE_H_EXTENSION
+        service_name = HSMStruct.Name
+        
+        """ Create service .h """
+        file_name = target_folder + '\\' + ProjectDefines.HSM_FILE_PREFIX +    \
+                    service_name + ProjectDefines.HSM_FILE_SUFFIX +           \
+                    ProjectDefines.FILE_H_EXTENSION
                 
-    Print("\nCreating : " + file_name, PrintLevels.INFO)
+        Print("\nCreating : " + file_name, PrintLevels.INFO)
     
-    tmpl = hsmService_h.hsmService_h(searchList=
-                            [{
-                            'srv'       : HSMStruct,
-                            'author'    : UserName,
-                            'extension' : ProjectDefines.FILE_H_EXTENSION,
-                            }])
+        tmpl = hsmService_h.hsmService_h(searchList=
+                                        [{
+                                        'srv'       : HSMStruct,
+                                        'author'    : user_name,
+                                        'extension' : ProjectDefines.FILE_H_EXTENSION,
+                                        }])
     
-    h_template = tmpl.respond()
+        h_template = tmpl.respond()
     
-    WriteToFile(file_name,h_template)
+        if WriteToFile(file_name,h_template) is False:
+            Print("Unable to create " + file_name, PrintLevels.CRITICAL)
+            return
     
-    """ .cc """
-    file_name = target_folder + '\\' + ProjectDefines.HSM_FILE_PREFIX +    \
-                HSMStruct.Name + ProjectDefines.HSM_FILE_SUFFIX +           \
-                ProjectDefines.FILE_CC_EXTENSION
+        """ Create service .cc """
+        file_name = target_folder + '\\' + ProjectDefines.HSM_FILE_PREFIX +    \
+                    service_name + ProjectDefines.HSM_FILE_SUFFIX +           \
+                    ProjectDefines.FILE_CC_EXTENSION
     
-    Print("\nCreating : " + file_name, PrintLevels.INFO)
+        Print("\nCreating : " + file_name, PrintLevels.INFO)
     
-    tmpl = hsmService_cc.hsmService_cc(searchList=
-                            [{
-                            'srv'       : HSMStruct,
-                            'extension' : ProjectDefines.FILE_CC_EXTENSION,
-                            }])
-    cc_template = tmpl.respond()
+        tmpl = hsmService_cc.hsmService_cc(searchList=
+                                            [{
+                                            'srv'       : HSMStruct,
+                                            'extension' : ProjectDefines.FILE_CC_EXTENSION,
+                                            }])
+        cc_template = tmpl.respond()
     
-    WriteToFile(file_name,cc_template)
-    
+        if WriteToFile(file_name,cc_template) is False:
+            Print("Unable to create " + file_name, PrintLevels.CRITICAL)
+            return
 
-    """ """"""""""""""""""""""""""""""""""""""""""""""""
+        """ """"""""""""""""""""""""""""""""""""""""""""""""
         
-        CREATE ERROR FILE 
+            CREATE ERROR FILE 
         
-        {Name}.Errors.h
+            {Name}.Errors.h
         
-    """ """"""""""""""""""""""""""""""""""""""""""""""""
+        """ """"""""""""""""""""""""""""""""""""""""""""""""
     
-    file_name = target_folder + '\\' + HSMStruct.Name + ProjectDefines.HSM_ERRORS_FILE
+        file_name = target_folder + '\\' + service_name + ProjectDefines.HSM_ERRORS_FILE
     
-    Print("\nCreating : " + file_name, PrintLevels.INFO)
+        Print("\nCreating : " + file_name, PrintLevels.INFO)
     
-    tmpl = hsmErrors_h.hsmErrors_h(searchList=
-                            [{
-                            'srv'       : HSMStruct,
-                            'extension' : ProjectDefines.FILE_H_EXTENSION,
-                            }])
+        tmpl = hsmErrors_h.hsmErrors_h(searchList=
+                                        [{
+                                        'srv'       : HSMStruct,
+                                        'extension' : ProjectDefines.FILE_H_EXTENSION,
+                                        }])
     
-    errors_template = tmpl.respond()
+        errors_template = tmpl.respond()
     
-    WriteToFile(file_name,errors_template)
+        if WriteToFile(file_name,errors_template) is False:
+            Print("Unable to create " + file_name, PrintLevels.CRITICAL)
+            return
     
     
     """ """"""""""""""""""""""""""""""""""""""""""""""""
@@ -174,11 +211,12 @@ def ScaffoldService(path):
     for StateList in HSMStruct.StateLevelList:
         for State in StateList:
             
-            if State.Name.startswith(ProjectDefines.IGNORE_STARTS_WITH) is True:
+            if State.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is True:
+                Print("\nState : " + State.Name[1:] + " is protected and will not be created!", PrintLevels.INFO)
                 continue
             
             """ .h """
-            file_name = target_folder + '\\' + HSMStruct.Name + '.' +        \
+            file_name = target_folder + '\\' + service_name + '.' +        \
                         'C' + State.Name + ProjectDefines.HSM_STATE_SUFFIX + \
                         ProjectDefines.FILE_H_EXTENSION
             
@@ -187,17 +225,20 @@ def ScaffoldService(path):
             tmpl = hsmState_h.hsmState_h(searchList=
                             [{
                             'srv'       : HSMStruct,
+                            'protected' : service_is_protected,
                             'state'     : State,
                             'extension' : ProjectDefines.FILE_H_EXTENSION,
-                            'author'    : UserName
+                            'author'    : user_name
                             }])
             
             state_h_template = tmpl.respond()
             
-            WriteToFile(file_name,state_h_template)
+            if WriteToFile(file_name,state_h_template) is False:
+                Print("Unable to create " + file_name, PrintLevels.CRITICAL)
+                return
             
             """ .cc """
-            file_name = target_folder + '\\' + HSMStruct.Name + '.' +        \
+            file_name = target_folder + '\\' + service_name + '.' +        \
                         'C' + State.Name + ProjectDefines.HSM_STATE_SUFFIX + \
                         ProjectDefines.FILE_CC_EXTENSION
             
@@ -206,12 +247,19 @@ def ScaffoldService(path):
             tmpl = hsmState_cc.hsmState_cc(searchList=
                             [{
                             'srv'       : HSMStruct,
+                            'protected' : service_is_protected,
                             'state'     : State,
                             'extension' : ProjectDefines.FILE_CC_EXTENSION,
                             }])
             
             state_cc_template = tmpl.respond()
             
-            WriteToFile(file_name,state_cc_template)
+            if WriteToFile(file_name,state_cc_template) is False:
+                Print("Unable to create " + file_name, PrintLevels.CRITICAL)
+                return
+                
+    
+    """ We are done so invalidate xml struct """
+    XMLReference.SetXMLInvalid()
     
     return ProjectFlags.STATUS_OKAY

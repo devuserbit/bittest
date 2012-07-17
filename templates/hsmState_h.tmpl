@@ -16,9 +16,16 @@
 ## ############################
 #set $todo              = 'TODO'
 #set $service           = 'Service'
-#set $serv_name         = 'CHSM' + $srv.Name + $service
 #set $state_name        = 'C' +  $state.Name + 'State'
+#if $protected == False
+#set $srv_name          = $srv.Name
+#set $serv_name         = 'CHSM' + $srv.Name + $service
 #set $file_name         = $srv.Name + '.' + $state_name
+#else
+#set $srv_name          = $srv.Name[1:]
+#set $serv_name         = 'CHSM' + $srv.Name[1:] + $service
+#set $file_name         = $srv.Name[1:] + '.' + $state_name
+#end if
 #set $intent            = '    '
 #set $def_fct_key       = {'cmd', 'reset', 'resp', 'event', 'abort', 'timer', 'stdcmd'}
 #set $def_fct           =   {
@@ -38,15 +45,15 @@
 $InsertFileHeader($file_name, $extension, $todo)
 
 
-\#ifndef _${srv.Name.upper()}_${state_name.upper()}_H
-\#define _${srv.Name.upper()}_${state_name.upper()}_H
+\#ifndef _${srv_name.upper()}_${state_name.upper()}_H
+\#define _${srv_name.upper()}_${state_name.upper()}_H
 
 \#include "CHSMServiceState.h"
 
 // Forward declaration
 class ${serv_name};
 
-namespace ns${srv.Name}${service}
+namespace ns${srv_name}${service}
 {
 
 $InsertClassHeader($state_name, $todo, $author, $intent)

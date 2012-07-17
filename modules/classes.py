@@ -65,7 +65,10 @@ class ProjectFlags:
 class ProjectDefines:
     
     """ Generic """
-    IGNORE_STARTS_WITH                  = '!'
+    PROTECTED_STARTS_WITH               = '!'
+    MARKER_START                        = '#^'
+    MARKER_END                          = '^#'
+    SINGLE_LINE_COMMENT                 = '//'
     
     """ File extension defines """
     FILE_H_EXTENSION                    = ".h"

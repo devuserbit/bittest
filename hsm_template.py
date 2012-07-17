@@ -245,7 +245,7 @@ def CheckForKeywords(keywords, string):
 def WriteToFile(path, string):
     
     if path is None or string is None:
-        return
+        return False
         
     try:
         def_fd = open(path, 'w')
@@ -255,6 +255,8 @@ def WriteToFile(path, string):
     else:
         def_fd.write(string)
         def_fd.close()
+        
+    return True
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
