@@ -23,6 +23,9 @@
     
         <hsm_service>                       This must be the uppermost tag in the hierarchy
             name=""                         Name of the hsm_service, if omitted "HSMTemplateService" will be used
+                                            If name is preceded by a '!' this means that the service is
+                                            protected and we will only add new state to the existing structure
+                                            (Notice the '#^' '^#' markers in the services .cc and .h file)
             
             path=""                         Absolute path of the location where the state machine should be placed.
                                             The script checks if the last given folder is present and if not it will be
@@ -31,7 +34,10 @@
                                             interface !
             
         <state>                             Tag describing a state of the hsm machine
-            name=""                         name of the state
+            name=""                         Name of the state
+                                            If name is preceded by '!' this means the state is protected
+                                            and will not be created. This is usefull when you want to add
+                                            new state to a existing hsm
             
             Initial="True"                  Marks the initial state (only accepted inside state tag)
                                             (if by mistake multiple states have initial attributes
