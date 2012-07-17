@@ -257,7 +257,8 @@ class ParseXML:
     
     def Parse(self, FilePath): 
         """ Parse XML using DOM module """
-        Tree = dom.parse(FilePath)         
+        Tree = dom.parse(FilePath)
+        print FilePath
         for TopLevelNode in Tree.childNodes:
             # Remember: any comment is a node as well
             if (TopLevelNode.nodeType == COMMENT_NODE):
@@ -275,6 +276,30 @@ class ParseXML:
         if(self.Debug is True):
             self.DebugOutput()
 
+    def SetXMLInvalid(self):
+        Tree = dom.parse(self.XMLPath)         
+        for TopLevelNode in Tree.childNodes:
+            # Remember: any comment is a node as well
+            if (TopLevelNode.nodeType == COMMENT_NODE):
+                continue
+            # Look for our xml hierachy named PARENT_NODE
+            if (TopLevelNode.nodeName == PARENT_NODE):
+                self.LookForStates(TopLevelNode)
+            print Tree.toxml()
+            myfile = open(self.XMLPath, "w")
+            myfile.write(Tree.toxml())
+            myfile.close
+
+
+    def LookForStates(self, Node):
+        for StateNode in Node.childNodes:
+            # Look for desired state nodes within given ParentNode
+            if (StateNode.nodeName == STATE_NODE):
+                name = StateNode.getAttribute("name")
+                if (name.find("!") == -1):
+                    StateNode.setAttribute("name", "!" + name)
+                self.LookForStates(StateNode) 
+                
             
     def DebugOutput(self):
         """ Output for debug purposes """
