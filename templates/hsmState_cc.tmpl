@@ -1,0 +1,140 @@
+#*
+    This is the template for the hsm states
+*#
+#from templates import genericHeaders
+#extends genericHeaders.genericHeaders
+#*
+    This is the secret to eternal live 2/2
+    
+    Without this you will get no output from the
+    def's in the parent class
+*#
+#implements respond
+
+## ############################
+## Get file header
+## ############################
+#set $todo              = 'TODO'
+#set $service           = 'Service'
+#set $serv_name         = 'CHSM' + $srv.Name + $service
+#set $state_name        = 'C' +  $state.Name + 'State'
+#set $intent            = '    '
+#set $def_fct_key       = {'cmd', 'reset', 'resp', 'event', 'abort', 'timer', 'stdcmd'}
+#set $def_fct           =   {
+                            'cmd'       : 'Command',
+                            'stdcmd'    : 'StdCommand',
+                            'reset'     : 'Reset',
+                            'resp'      : 'Response',
+                            'event'     : 'Event',
+                            'abort'     : 'Abort',
+                            'timer'     : 'Timer'
+                            }
+#set $serv_msg_type     =   {
+                            'cmd'       : 'COMMAND_TYPE',
+                            'stdcmd'    : 'STD_COMMAND_TYPE',
+                            'reset'     : 'RESET_TYPE',
+                            'resp'      : 'COMMAND_RESPONSE_TYPE',
+                            'event'     : 'SYSTEM_EVENT_TYPE',
+                            'abort'     : 'ABORT_TYPE',
+                            'timer'     : 'TIMEOUT_TYPE'
+                            }
+#set $callbacks         =   {
+                            'entry'     : 'OnEntry',
+                            'active'    : 'OnActive',
+                            'exit'      : 'OnExit'
+                            }
+$InsertFileHeader($state_name, $extension, $todo)
+
+\#include "${serv_name}.h"
+\#include "${srv.Name}.${state_name}"
+
+using namespace ns${srv.Name}${service}
+
+## ############################
+## OnEntry
+## ############################
+#set $case      = 'entry'
+#if $state.Callbacks.get($case) == True
+#set $params     = {'pMsg'}
+#set $comment    = 'Entry handler for this ' + $state.Name + ' state'
+$InsertFunctionHeader($state_name, $callbacks.get($case), $comment, $params, 'HSM_SVC_STATE_RESPONSE')
+HSM_SVC_STATE_RESPONSE ${state_name}::${callbacks.get($case)}(CServiceMessage *pMsg)
+{
+
+    // Report back that the message is handled.
+    HSM_RET_MSG_HANDLED();
+}
+#end if
+
+## ############################
+## OnActive
+## ############################
+#set $case      = 'active'
+#if $state.Callbacks.get($case) == True
+#set $params     = {'pMsg'}
+#set $leftover   = []
+#set $comment    = 'Our state is active. Take messages.'
+$InsertFunctionHeader($state_name, $callbacks.get($case), $comment, $params, 'HSM_SVC_STATE_RESPONSE')
+HSM_SVC_STATE_RESPONSE ${state_name}::${callbacks.get($case)}(CServiceMessage *pMsg)
+{
+    // Handle all the message types
+    switch(pMsg->GetMsgType())
+    { #slurp
+## Scroll to the callbacks and add those existing
+#for $fct in $def_fct_key
+#if $state.Functions.get($fct) == True or $state.Functions.get('all') == True
+        case CServiceMessage::$serv_msg_type.get($fct):
+        {
+            return On${def_fct.get($fct)}Msg(CServiceMessage *pMsg);
+        } #slurp
+#else
+## Add to $leftovers to be added at the end
+$leftover.append($fct)
+#end if 
+#end for
+#if len($leftover) > 0
+#for $i in $leftover
+        case CServiceMessage::$serv_msg_type.get($i):
+#end for
+#end if
+        default:
+        {
+            // Set to Handled
+            HSM_RET_MSG_HANDLED();
+        }
+        
+    }   // switch on message type
+}#slurp
+#end if
+
+## ############################
+## OnExit
+## ############################
+#set $case      = 'exit'
+#if $state.Callbacks.get($case) == True
+#set $comment    = 'exit - cleanup or statistics on state'
+$InsertFunctionHeader($state_name, $callbacks.get($case), $comment)
+void ${state_name}::${callbacks.get($case)}()
+{
+    // nothing yet
+}#slurp
+#end if
+
+## ############################
+## Default fct
+## ############################
+#for $fct in $def_fct_key
+#if $state.Functions.get($fct) == True or $state.Functions.get('all') == True
+#set $fct_name   = 'On' + $def_fct.get($fct) + 'Msg'
+#set $params     = {'pMsg'}
+$InsertFunctionHeader($state_name, $fct_name, $todo, $params, 'HSM_SVC_STATE_RESPONSE')
+HSM_SVC_STATE_RESPONSE ${state_name}::${fct_name}(CServiceMessage *pMsg)
+{
+    // TODO
+
+    // Done with the message
+    HSM_RET_MSG_HANDLED();
+}
+
+#end if
+#end for

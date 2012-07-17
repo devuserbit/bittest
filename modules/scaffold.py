@@ -42,6 +42,7 @@ from templates import hsmService_h
 from templates import hsmService_cc
 from templates import hsmErrors_h
 from templates import hsmState_h
+from templates import hsmState_cc
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -202,5 +203,15 @@ def ScaffoldService(path):
             
             Print("\nCreating : " + file_name, PrintLevels.INFO)
     
+            tmpl = hsmState_cc.hsmState_cc(searchList=
+                            [{
+                            'srv'       : HSMStruct,
+                            'state'     : State,
+                            'extension' : ProjectDefines.FILE_CC_EXTENSION,
+                            }])
+            
+            state_cc_template = tmpl.respond()
+            
+            WriteToFile(file_name,state_cc_template)
     
     return ProjectFlags.STATUS_OKAY

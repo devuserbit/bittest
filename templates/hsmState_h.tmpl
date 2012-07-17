@@ -18,6 +18,7 @@
 #set $service           = 'Service'
 #set $serv_name         = 'CHSM' + $srv.Name + $service
 #set $state_name        = 'C' +  $state.Name + 'State'
+#set $file_name         = $srv.Name + '.' + $state_name
 #set $intent            = '    '
 #set $def_fct_key       = {'cmd', 'reset', 'resp', 'event', 'abort', 'timer', 'stdcmd'}
 #set $def_fct           =   {
@@ -29,7 +30,12 @@
                             'abort'     : 'Abort',
                             'timer'     : 'Timer'
                             }
-$InsertFileHeader($state_name, $extension, $todo)
+#set $callbacks         =   {
+                            'entry'     : 'OnEntry',
+                            'active'    : 'OnActive',
+                            'exit'      : 'OnExit'
+                            }
+$InsertFileHeader($file_name, $extension, $todo)
 
 
 \#ifndef _${srv.Name.upper()}_${state_name.upper()}_H
@@ -58,13 +64,13 @@ $InsertClassHeader($state_name, $todo, $author, $intent)
         ## Callbacks
         ## ##########################################
 #if $state.Callbacks.get('entry') == True
-        HSM_SVC_STATE_RESPONSE  OnEntry(CServiceMessage *pMsg);
+        HSM_SVC_STATE_RESPONSE  $callbacks.get('entry')(CServiceMessage *pMsg);
 #end if
 #if $state.Callbacks.get('active') == True
-        HSM_SVC_STATE_RESPONSE  OnActive(CServiceMessage *pMsg);
+        HSM_SVC_STATE_RESPONSE  $callbacks.get('active')(CServiceMessage *pMsg);
 #end if
 #if $state.Callbacks.get('exit') == True
-        void                    OnEntry();
+        void                    $callbacks.get('exit')();
 #end if
         
     protected:
