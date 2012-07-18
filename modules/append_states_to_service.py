@@ -19,21 +19,22 @@
         1.0     17.07.2012      APopescu        Initial version
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-
 import os,sys
+import re
 pwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(pwd)
+
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""
     Imports
 """ """"""""""""""""""""""""""""""""""""""""""""""""
-from hsm_template import Print
-from hsm_template import WriteToFile
+
 from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
 
+def Print(string,level):
+    print string
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -98,6 +99,44 @@ def InsertIntoString(to_string,from_string,start,stop):
     \return     SYSSTATUS
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def HeaderEntries(states):
+    string = ""
+    for state in states:
+        string += r'#include "Template.C' + state.Name + r'State.h"' + "\n"
+    return string
+
+def EnumEntries(states):
+    string = ""
+    for state in states:
+        string += r'        ' + state.Name.upper() + "_STATE,\n"
+    return string    
+    
+def DefineEntries(states):
+    string = ""
+    for state in states:
+        string += r'    nsTemplateService::C' + state.Name + 'State ' + state.Name + "State; \n"
+    return string    
+    
+def FriendEntries(states):
+    string = ""
+    for state in states:
+        string += r'    friend class    nsTemplateService::C' + state.Name + "State;\n"
+    return string    
+
+def InitEntries(states):
+    string = ""
+    for state in states:
+        string += r'    nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &BusyState,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
+    return string    
+
+def CtorEntries(states):
+    string = ""
+    for state in states:
+        string += "                     "+state.Name + "State(this),\n"
+    return string    
+
+ 
+
 def AppendStatesToService(service, target_path):
     
     __function__    = "AppendStatesToService()"
@@ -155,29 +194,97 @@ def AppendStatesToService(service, target_path):
                 """ Add to new states list """
                 new_states.append(State)
     
+
     if len(new_states) == 0:
         Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_OKAY
-        
-    """ Add to .h file """
-    while True:
-        
-        start_position = h_file_read.find[ProjectDefines.MARKER_START,start_position]
-        if start_position == -1:
-            break
-            
-        stop_position = h_file_read.find[ProjectDefines.MARKER_START,start_position]
-        
-        
-        
-        
-        
-    string_size         = len(cc_file_read) 
-    current_position    = 0
     
-    """ Add to .cc file """
-    #while current_position < string_size:
+    file = open(h_file_path, 'r')
+    newfile = ""
+    ResultString = ""
+    Marker = False
+    
+    # header file manipulation
+    for line in file:
+        if (line.find("#^") > -1 ):
+            # do some regex work to make sure we found what we are looking for
+            if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
+                continue
+            # search for start marker
+            MatchObject = re.search(r'[A-Za-z]+',line,0)
+            
+            # do something considering marker
+            if MatchObject is not None:
+                MatchString = MatchObject.group()
+                #print "found " + MatchString
+                Marker = True
+                ResultString = {
+                  r'HEADERS':     lambda: HeaderEntries(new_states),
+                  r'ENUMS':       lambda: EnumEntries(new_states),
+                  r'FRIENDS':     lambda: FriendEntries(new_states),
+                  r'DEFINES':     lambda: DefineEntries(new_states)
+                }[MatchString.upper()]()
+            # go to next line
+            continue
         
+        # Look for closing marker
+        if (line.find("^#") > -1 ):
+            if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
+                continue
+            if Marker is True:
+                # Add to string file
+                newfile += ResultString
+            
+        newfile +=(line)
+    file.close()
+    file = open(h_file_path, 'w')
+    file.write(newfile)
+    file.close()
+    
+    file = open(cc_file_path, 'r')
+    newfile = ""
+    ResultString = ""
+    Marker = False
+    
+    # header file manipulation
+    for line in file:
+        if (line.find("#^") > -1 ):
+            # do some regex work to make sure we found what we are looking for
+            if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
+                continue
+            # search for start marker
+            MatchObject = re.search(r'[A-Za-z_]+',line,0)
+            
+            # do something considering marker
+            if MatchObject is not None:
+                MatchString = MatchObject.group()
+                Marker = True
+                ResultString = {
+                  r'CTOR_STATES':     lambda: CtorEntries(new_states),
+                  r'INIT_STATES':     lambda: InitEntries(new_states),
+                  r'INITIAL_STATE':     lambda: ""
+                }[MatchString.upper()]()
+            # go to next line
+            continue
         
+        # Look for closing marker
+        if (line.find("^#") > -1 ):
+            if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
+                continue
+            if Marker is True:
+                # Add to string file
+                newfile += ResultString
+            
+        newfile +=(line)
+    file.close()
+    file = open(cc_file_path, 'w')
+    file.write(newfile)
+    file.close()
+    
     
     return ProjectFlags.STATUS_OKAY
+    
+
+    
+    
+
