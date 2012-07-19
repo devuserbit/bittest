@@ -17,6 +17,7 @@
         Vers.   Date            Name            Comment
     
         1.0     17.07.2012      APopescu        Initial version
+        1.1     19.07.2012      BMOLL       	Make it easy make it pretty and it will work like a charm
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 import os,sys
@@ -47,7 +48,7 @@ def Print(string,level):
     \return     sread - the internal of the read file or None
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def ReadFromFile(path):
+def ReadLinesFromFile(path):
     
     sread = None
     
@@ -60,43 +61,15 @@ def ReadFromFile(path):
         print "Unable to open {} ({} : {})".format(path, e.errno, e.strerror)
         return sread
     else:
-        sread = def_fd.read()
+        sread = def_fd.readlines()
         def_fd.close()
     
     return sread
 
 
-def InsertIntoString(to_string,from_string,start,stop):
-    
-    if to_string is None:
-        return from_string
-        
-    if from_string is None:
-        return to_string
-    
-    if stop <= start:
-        return from_string
-    
-    start_string    = to_string[:start]
-    stop_string     = to_string[stop:]
-    
-    size = len(start_string) + len(from_string)
-    
-    to_string = start_string + from_string + stop_string
-    
-    return to_string,size
-
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         AppendStatesToService()
-
-    \brief      Add new states to a existing HSM service
-    
-    \params     service - class defining the service as described in the xml
-    
-    \params     target_path - path to the existing HSM service
-
-    \return     SYSSTATUS
+    \fn         LittleHelperFunctions()
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def HeaderEntries(states):
@@ -114,7 +87,7 @@ def EnumEntries(states):
 def DefineEntries(states):
     string = ""
     for state in states:
-        string += r'    nsTemplateService::C' + state.Name + 'State ' + state.Name + "State; \n"
+        string += r'    nsTemplateService::C' + state.Name + 'State\t\t\t\t' + state.Name + "State; \n"
     return string    
     
 def FriendEntries(states):
@@ -126,7 +99,7 @@ def FriendEntries(states):
 def InitEntries(states):
     string = ""
     for state in states:
-        string += r'    nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &BusyState,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
+        string += r'    nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + state.Parent.Name +'State,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
     return string    
 
 def CtorEntries(states):
@@ -135,8 +108,137 @@ def CtorEntries(states):
         string += "                     "+state.Name + "State(this),\n"
     return string    
 
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         AddNewStatesToFile()
+
+    \brief      Look for markers in file and add new states
+    
+    \params     Path - path to file
+    
+    \params     States - new states
+
+    \return     
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def AddNewStatesToFile(Path, States):
+    
+    File = ReadLinesFromFile(Path)
+    
+    if File is None:
+        Print(__function__ + " : Couldn't read .cc or .h service files! Aborting!\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
+    
+    # Get modified file after new states were added
+    NewFile = ParseForMarkers(File, States)
+    
+    # Overwrite old file with new
+    WriteToFile(Path, NewFile)
+    
+    return ProjectFlags.STATUS_OKAY
+
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         ParseForMarkers()
+
+    \brief      parse line array for certain markers
+    
+    \params     File - Array of file lines
+    
+    \params     States - new states
+
+    \return     string that contains new file
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def ParseForMarkers(File, States):
+    NewFile = ""
+    NewStateString = ""
+    MarkerActive = False
+    
+    # Scan each line for marker
+    for line in File:
+        # Do some regex action on: " // #^ MARKER_NAME "
+        if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line) is not None):  
+			# We have a hit - get our marker. legit characters are A-Z, a-z and underscores     
+			MarkerString = re.search(r'[A-Za-z_]+',line,0)        
+			if MarkerString is not None:
+				# We found a valid marker
+				MarkerName = MarkerString.group()
+				MarkerActive = True
+				NewStateString = CreateStringOnMarker(MarkerName, States)
+        
+        # Look for closing marker
+        if (re.compile(r'( *)//( *)\^#').match(line) is not None):
+			if MarkerActive is True:
+				# Add to string file
+				NewFile += NewStateString
+				MarkerActive = False
+            
+        NewFile +=line
+        
+    return NewFile      
  
 
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         WriteToFile()
+
+    \brief      write string to file
+    
+    \params     Path - path to write file to
+    
+    \params     String - string whcih contains new file content
+
+    \return     
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def WriteToFile(Path, String):
+    file = open(Path, 'w')
+    file.write(String)
+    file.close()
+
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         CreateStringOnMarker()
+
+    \brief      create string depending on marker
+    
+    \params     marker - marker to look for
+    
+    \params     new_states - new states to be added
+
+    \return     created string to add to file
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def CreateStringOnMarker(Marker, new_states):  
+    ResultString = {
+      r'CTOR_STATES'    :     lambda: CtorEntries(new_states),
+      r'INIT_STATES'    :     lambda: InitEntries(new_states),
+      r'INITIAL_STATE'  :     lambda: "",
+      r'HEADERS'        :     lambda: HeaderEntries(new_states),
+      r'ENUMS'          :     lambda: EnumEntries(new_states),
+      r'FRIENDS'        :     lambda: FriendEntries(new_states),
+      r'DEFINES'        :     lambda: DefineEntries(new_states)
+    }[Marker.upper()]()
+    return ResultString
+
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         AppendStatesToService()
+
+    \brief      Add new states to a existing HSM service
+    
+    \params     service - class defining the service as described in the xml
+    
+    \params     target_path - path to the existing HSM service
+
+    \return     SYSSTATUS
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def AppendStatesToService(service, target_path):
     
     __function__    = "AppendStatesToService()"
@@ -177,14 +279,6 @@ def AppendStatesToService(service, target_path):
     if os.path.isfile(cc_file_path) is False:
         Print(__function__ + " : .cc file not found! Aborting!\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_INVALID_PARAMETER
-        
-    """ Read the .h and .cc file internals """
-    h_file_read = ReadFromFile(h_file_path)
-    cc_file_read = ReadFromFile(cc_file_path)
-    
-    if h_file_read is None or cc_file_read is None:
-        Print(__function__ + " : Couldn't read .cc or .h service files! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
     
     Print("\nScanning for new states...", PrintLevels.INFO)
     
@@ -193,98 +287,29 @@ def AppendStatesToService(service, target_path):
             if State.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
                 """ Add to new states list """
                 new_states.append(State)
-    
 
     if len(new_states) == 0:
         Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_OKAY
     
-    file = open(h_file_path, 'r')
-    newfile = ""
-    ResultString = ""
-    Marker = False
-    
-    # header file manipulation
-    for line in file:
-        if (line.find("#^") > -1 ):
-            # do some regex work to make sure we found what we are looking for
-            if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
-                continue
-            # search for start marker
-            MatchObject = re.search(r'[A-Za-z]+',line,0)
-            
-            # do something considering marker
-            if MatchObject is not None:
-                MatchString = MatchObject.group()
-                #print "found " + MatchString
-                Marker = True
-                ResultString = {
-                  r'HEADERS':     lambda: HeaderEntries(new_states),
-                  r'ENUMS':       lambda: EnumEntries(new_states),
-                  r'FRIENDS':     lambda: FriendEntries(new_states),
-                  r'DEFINES':     lambda: DefineEntries(new_states)
-                }[MatchString.upper()]()
-            # go to next line
-            continue
+    status = AddNewStatesToFile(h_file_path, new_states)
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status
         
-        # Look for closing marker
-        if (line.find("^#") > -1 ):
-            if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
-                continue
-            if Marker is True:
-                # Add to string file
-                newfile += ResultString
-            
-        newfile +=(line)
-    file.close()
-    file = open(h_file_path, 'w')
-    file.write(newfile)
-    file.close()
-    
-    file = open(cc_file_path, 'r')
-    newfile = ""
-    ResultString = ""
-    Marker = False
-    
-    # header file manipulation
-    for line in file:
-        if (line.find("#^") > -1 ):
-            # do some regex work to make sure we found what we are looking for
-            if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
-                continue
-            # search for start marker
-            MatchObject = re.search(r'[A-Za-z_]+',line,0)
-            
-            # do something considering marker
-            if MatchObject is not None:
-                MatchString = MatchObject.group()
-                Marker = True
-                ResultString = {
-                  r'CTOR_STATES':     lambda: CtorEntries(new_states),
-                  r'INIT_STATES':     lambda: InitEntries(new_states),
-                  r'INITIAL_STATE':     lambda: ""
-                }[MatchString.upper()]()
-            # go to next line
-            continue
-        
-        # Look for closing marker
-        if (line.find("^#") > -1 ):
-            if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
-                continue
-            if Marker is True:
-                # Add to string file
-                newfile += ResultString
-            
-        newfile +=(line)
-    file.close()
-    file = open(cc_file_path, 'w')
-    file.write(newfile)
-    file.close()
-    
+    status = AddNewStatesToFile(cc_file_path, new_states)
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status
     
     return ProjectFlags.STATUS_OKAY
     
+    
+    
+    
 
     
     
+    
+    
 
+    
+  
