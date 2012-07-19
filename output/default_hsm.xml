@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+<?xml version="1.0" ?><!--
     Copyright (c) 2012 - BIT Analytical Instruments GmbH. All rights reserved
     
     $LastChangedDate:  $
@@ -93,36 +92,36 @@
                       |
                       |____ Activity
         
--->
-
-<hsm_service name="Template" path="C:\Projects\Tools\HSMTemplateScaffolding\TestService\">
-    <state name="Root">
-        <callbacks> <entry /> <active /> </callbacks>
-        <default_fct> <all /> </default_fct>
+--><hsm_service name="!Template" path="C:\Projects\Tools\HSMTemplateScaffolding\TestService\">
+    <state name="!Root">
+        <callbacks> <entry/> <active/> </callbacks>
+        <default_fct> <all/> </default_fct>
             
-        <state name="Reset" Initial="True">
-            <callbacks> <active /> </callbacks>
-            <default_fct> <cmd /> </default_fct>
+        <state Initial="True" name="!Reset">
+            <callbacks> <active/> </callbacks>
+            <default_fct> <cmd/> </default_fct>
         </state>
         
-        <state name="Ready">
-            <callbacks> <active /> </callbacks>
-            <default_fct> <cmd /> <stdcmd /> </default_fct>
+        <state name="!Ready">
+            <callbacks> <active/> </callbacks>
+            <default_fct> <cmd/> <stdcmd/> </default_fct>
         </state>
         
-        <state name="Busy">
-            <callbacks> <entry /> <active /> <exit /> </callbacks>
-            <default_fct> <cmd /> <stdcmd /> <abort /> <reset /> <timer /> </default_fct>
+        <state name="!Busy">
+            <callbacks> <entry/> <active/> <exit/> </callbacks>
+            <default_fct> <cmd/> <stdcmd/> <abort/> <reset/> <timer/> </default_fct>
             
-            <state name="Activity">
-            <callbacks> <entry /> <active /> <exit /> </callbacks>
-            <default_fct> <cmd /> <stdcmd /> <abort /> <reset /> <timer /> </default_fct>
+            <state name="!Activity">
+            <callbacks> <entry/> <active/> <exit/> </callbacks>
+            <default_fct> <cmd/> <stdcmd/> <abort/> <reset/> <timer/> </default_fct>
+            </state>
+            
+            <state name="!Activity2">
+            <callbacks> <entry/> <active/> <exit/> </callbacks>
+            <default_fct> <cmd/> <stdcmd/> <abort/> <reset/> <timer/> </default_fct>
             </state>
         
         </state>
         
     </state>
 </hsm_service>
-
-
-

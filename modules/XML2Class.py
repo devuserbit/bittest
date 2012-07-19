@@ -285,7 +285,7 @@ class ParseXML:
             # Look for our xml hierachy named PARENT_NODE
             if (TopLevelNode.nodeName == PARENT_NODE):
                 self.LookForStates(TopLevelNode)
-            print Tree.toxml()
+            #~ print Tree.toxml()
             myfile = open(self.XMLPath, "w")
             myfile.write(Tree.toxml())
             myfile.close

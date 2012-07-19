@@ -20,12 +20,12 @@ ________________________________________________________________________________
 #include "CHSMService.h"
 
 // Include state headers
-// #^ HEADERS
 #include "Template.CRootState.h"
 #include "Template.CResetState.h"
 #include "Template.CReadyState.h"
 #include "Template.CBusyState.h"
 #include "Template.CActivityState.h"
+#include "Template.CActivity2State.h"
 // ^#
 
 
@@ -102,12 +102,12 @@ protected:
     ///////////////////////////////////////////////////////////////////
     enum
     {
-        // #^ ENUMS
         ROOT_STATE,                       // 0 - TODO: Decription
         RESET_STATE,                      // 1 - TODO: Decription
         READY_STATE,                      // 2 - TODO: Decription
         BUSY_STATE,                       // 3 - TODO: Decription
         ACTIVITY_STATE,                   // 4 - TODO: Decription
+        ACTIVITY2_STATE,
         // ^#
         LAST_STATE
     } STATE_NUMBERS;
@@ -121,22 +121,22 @@ protected:
     // Friend class declaration
     // make sure our states are friends so they can access this class
     // Compiler requires the namespace - "using" does not help
-    // #^ FRIENDS
     friend class    nsTemplateService::CRootState;
     friend class    nsTemplateService::CResetState;
     friend class    nsTemplateService::CReadyState;
     friend class    nsTemplateService::CBusyState;
     friend class    nsTemplateService::CActivityState;
+    friend class    nsTemplateService::CActivity2State;
     // ^#
     
     
     // Define states
-    // #^ DEFINES
     nsTemplateService::CRootState                   RootState;
     nsTemplateService::CResetState                  ResetState;
     nsTemplateService::CReadyState                  ReadyState;
     nsTemplateService::CBusyState                   BusyState;
     nsTemplateService::CActivityState               ActivityState;
+    nsTemplateService::CActivity2State Activity2State; 
     // ^#
     
     // List of our errors and their respective string

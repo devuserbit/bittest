@@ -28,13 +28,12 @@ sys.path.append(pwd)
 """ """"""""""""""""""""""""""""""""""""""""""""""""
     Imports
 """ """"""""""""""""""""""""""""""""""""""""""""""""
-
+from hsm_template import VERBOSE
+from hsm_template import Print
+from hsm_template import WriteToFile
 from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
-
-def Print(string,level):
-    print string
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -86,19 +85,7 @@ def InsertIntoString(to_string,from_string,start,stop):
     
     return to_string,size
 
-""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         AppendStatesToService()
-
-    \brief      Add new states to a existing HSM service
-    
-    \params     service - class defining the service as described in the xml
-    
-    \params     target_path - path to the existing HSM service
-
-    \return     SYSSTATUS
-            
-""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def HeaderEntries(states):
     string = ""
     for state in states:
@@ -136,7 +123,19 @@ def CtorEntries(states):
     return string    
 
  
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+    \fn         AppendStatesToService()
+
+    \brief      Add new states to a existing HSM service
+    
+    \params     service - class defining the service as described in the xml
+    
+    \params     target_path - path to the existing HSM service
+
+    \return     SYSSTATUS
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def AppendStatesToService(service, target_path):
     
     __function__    = "AppendStatesToService()"
@@ -178,14 +177,6 @@ def AppendStatesToService(service, target_path):
         Print(__function__ + " : .cc file not found! Aborting!\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_INVALID_PARAMETER
         
-    """ Read the .h and .cc file internals """
-    h_file_read = ReadFromFile(h_file_path)
-    cc_file_read = ReadFromFile(cc_file_path)
-    
-    if h_file_read is None or cc_file_read is None:
-        Print(__function__ + " : Couldn't read .cc or .h service files! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-    
     Print("\nScanning for new states...", PrintLevels.INFO)
     
     for StateList in service.StateLevelList:
@@ -199,24 +190,33 @@ def AppendStatesToService(service, target_path):
         Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_OKAY
     
-    file = open(h_file_path, 'r')
+    """ """"""""""""""""""""""""""""""""""""""""""""""""
+        
+        CHANGE SERVICE .h FILE
+        
+    """ """"""""""""""""""""""""""""""""""""""""""""""""
+    try:
+        h_file_read = open(h_file_path, 'r')
+    except IOError as e:
+        print "Unable to open {} ({} : {})".format(h_file_path, e.errno, e.strerror)
+    
     newfile = ""
     ResultString = ""
     Marker = False
     
-    # header file manipulation
-    for line in file:
+    for line in h_file_read:
         if (line.find("#^") > -1 ):
-            # do some regex work to make sure we found what we are looking for
+            
+            """ do some regex work to make sure we found what we are looking for """
             if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
                 continue
-            # search for start marker
+                
+            """ search for start marker """
             MatchObject = re.search(r'[A-Za-z]+',line,0)
             
-            # do something considering marker
+            """ do something considering marker """
             if MatchObject is not None:
                 MatchString = MatchObject.group()
-                #print "found " + MatchString
                 Marker = True
                 ResultString = {
                   r'HEADERS':     lambda: HeaderEntries(new_states),
@@ -224,38 +224,52 @@ def AppendStatesToService(service, target_path):
                   r'FRIENDS':     lambda: FriendEntries(new_states),
                   r'DEFINES':     lambda: DefineEntries(new_states)
                 }[MatchString.upper()]()
-            # go to next line
+                
+            """ go to next line """
             continue
         
-        # Look for closing marker
+        """ Look for closing marker """
         if (line.find("^#") > -1 ):
             if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
                 continue
+                
             if Marker is True:
-                # Add to string file
+                """ Add string to file """
                 newfile += ResultString
             
         newfile +=(line)
-    file.close()
-    file = open(h_file_path, 'w')
-    file.write(newfile)
-    file.close()
+        
+    h_file_read.close()
     
-    file = open(cc_file_path, 'r')
+    """ Write back to file """
+    WriteToFile(h_file_path,newfile)
+    
+    
+    """ """"""""""""""""""""""""""""""""""""""""""""""""
+        
+        CHANGE SERVICE .cc FILE
+        
+    """ """"""""""""""""""""""""""""""""""""""""""""""""
+    try:
+        cc_file_read = open(cc_file_path, 'r')
+    except IOError as e:
+        print "Unable to open {} ({} : {})".format(cc_file_path, e.errno, e.strerror)
+        
     newfile = ""
     ResultString = ""
     Marker = False
     
-    # header file manipulation
-    for line in file:
+    for line in cc_file_read:
         if (line.find("#^") > -1 ):
-            # do some regex work to make sure we found what we are looking for
+            
+            """ do some regex work to make sure we found what we are looking for """
             if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line).group() is None):
                 continue
-            # search for start marker
+                
+            """ search for start marker """
             MatchObject = re.search(r'[A-Za-z_]+',line,0)
             
-            # do something considering marker
+            """ do something considering marker """
             if MatchObject is not None:
                 MatchString = MatchObject.group()
                 Marker = True
@@ -264,23 +278,25 @@ def AppendStatesToService(service, target_path):
                   r'INIT_STATES':     lambda: InitEntries(new_states),
                   r'INITIAL_STATE':     lambda: ""
                 }[MatchString.upper()]()
-            # go to next line
+                
+            """ go to next line """
             continue
         
-        # Look for closing marker
+        """ Look for closing marker """
         if (line.find("^#") > -1 ):
             if (re.compile(r'( *)//( *)\^#').match(line).group() is None):
                 continue
+                
             if Marker is True:
-                # Add to string file
+                """ Add string to file """
                 newfile += ResultString
             
         newfile +=(line)
-    file.close()
-    file = open(cc_file_path, 'w')
-    file.write(newfile)
-    file.close()
+        
+    cc_file_read.close()
     
+    """ Write back to file """
+    WriteToFile(cc_file_path,newfile)
     
     return ProjectFlags.STATUS_OKAY
     

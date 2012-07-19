@@ -97,12 +97,12 @@ CHSMTemplateService::CHSMTemplateService(INT16U     nSrvNo,
                                                        pTask,
                                                        NULL,
                                                        ErrorMap),
-                                         // #^ CTOR_STATES
                                          RootState(this),
                                          ResetState(this),
                                          ReadyState(this),
                                          BusyState(this),
                                          ActivityState(this),
+                     Activity2State(this),
                                          // ^#
                                          m_pControlledObj(pControlledObj)
 {
@@ -126,7 +126,6 @@ SYSSTATUS CHSMTemplateService::InitStates()
     // We will initialize all our states
     // Send the HSM this state belongs, its parent state, and its enumerated state number
     //
-    // #^ INIT_STATES
     SYSSTATUS16     nStatus = RootState.Init(&PrimaryHSM, NULL, ROOT_STATE);
     ASSERT_RETURN_BAD_STATUS(nStatus);
 
@@ -142,10 +141,12 @@ SYSSTATUS CHSMTemplateService::InitStates()
     nStatus = ActivityState.Init(&PrimaryHSM, &BusyState, ACTIVITY_STATE);
     ASSERT_RETURN_BAD_STATUS(nStatus);
 
+    nStatus = Activity2State.Init(&PrimaryHSM, &BusyState,ACTIVITY2_STATE);
+    ASSERT_RETURN_BAD_STATUS(nStatus);
+
     // ^#
 
     // Set initial state of the  main HSM
-    // #^ INITIAL_STATE
     nStatus = PrimaryHSM.SetInitialState(this,&ResetState);
     ASSERT_RETURN_BAD_STATUS(nStatus);
     // ^#
