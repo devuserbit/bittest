@@ -19,6 +19,7 @@
         1.1     06.07.2012      BMoll           Enhancements
         1.2     16.07.2012      BMoll           Initial/Dynamic fix
         1.3     16.07.2012      BMoll           callbacks and std_fcts are now dictionaries
+        1.4     23.07.2012      BMoll           service is now set invalid as well, minor changes
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -284,23 +285,29 @@ class ParseXML:
                 continue
             # Look for our xml hierachy named PARENT_NODE
             if (TopLevelNode.nodeName == PARENT_NODE):
-                self.LookForStates(TopLevelNode)
-            print Tree.toxml()
+                # Set service name invalid as well
+                self.SetNodeInvalid(TopLevelNode)
+                # Do recursiv search for state nodes
+                self.LookForStateNodes(TopLevelNode)
+            if(self.Debug is True):
+                print Tree.toxml()
             myfile = open(self.XMLPath, "w")
             myfile.write(Tree.toxml())
             myfile.close
 
 
-    def LookForStates(self, Node):
+    def LookForStateNodes(self, Node):
         for StateNode in Node.childNodes:
             # Look for desired state nodes within given ParentNode
             if (StateNode.nodeName == STATE_NODE):
-                name = StateNode.getAttribute("name")
-                if (name.find("!") == -1):
-                    StateNode.setAttribute("name", "!" + name)
-                self.LookForStates(StateNode) 
+                self.SetNodeInvalid(StateNode)
+                self.LookForStateNodes(StateNode) 
                 
-            
+    def SetNodeInvalid(self, Node):
+        name = Node.getAttribute("name")
+        if (name.find("!") == -1):
+            Node.setAttribute("name", "!" + name)
+        
     def DebugOutput(self):
         """ Output for debug purposes """
         depth = self.HSM.GetMaxNestingDepth()
