@@ -29,13 +29,12 @@ sys.path.append(pwd)
 """ """"""""""""""""""""""""""""""""""""""""""""""""
     Imports
 """ """"""""""""""""""""""""""""""""""""""""""""""""
-
+from hsm_template import VERBOSE
+from hsm_template import Print
+from hsm_template import WriteToFile
 from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
-
-def Print(string,level):
-    print string
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -67,11 +66,7 @@ def ReadLinesFromFile(path):
     return sread
 
 
-""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         LittleHelperFunctions()
-            
-""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def HeaderEntries(states):
     string = ""
     for state in states:
@@ -180,6 +175,7 @@ def ParseForMarkers(File, States):
         
     return NewFile      
  
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -303,6 +299,8 @@ def AppendStatesToService(service, target_path):
     return ProjectFlags.STATUS_OKAY
     
     
+    """ Write back to file """
+    WriteToFile(cc_file_path,newfile)
     
     
 
