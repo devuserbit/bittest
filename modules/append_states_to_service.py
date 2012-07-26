@@ -17,7 +17,7 @@
         Vers.   Date            Name            Comment
     
         1.0     17.07.2012      APopescu        Initial version
-        1.1     19.07.2012      BMOLL       	Make it easy make it pretty and it will work like a charm
+        1.1     19.07.2012      BMOLL           Make it easy make it pretty and it will work like a charm
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 import os,sys
@@ -76,31 +76,31 @@ def HeaderEntries(states):
 def EnumEntries(states):
     string = ""
     for state in states:
-        string += r'        ' + state.Name.upper() + "_STATE,\n"
+        string += state.Name.upper() + "_STATE,\n"
     return string    
     
 def DefineEntries(states):
     string = ""
     for state in states:
-        string += r'    nsTemplateService::C' + state.Name + 'State\t\t\t\t' + state.Name + "State; \n"
+        string += r'nsTemplateService::C' + state.Name + 'State\t\t\t\t\t' + state.Name + "State; \n"
     return string    
     
 def FriendEntries(states):
     string = ""
     for state in states:
-        string += r'    friend class    nsTemplateService::C' + state.Name + "State;\n"
+        string += r'friend class    nsTemplateService::C' + state.Name + "State;\n"
     return string    
 
 def InitEntries(states):
     string = ""
     for state in states:
-        string += r'    nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + state.Parent.Name +'State,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
+        string += r'nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + state.Parent.Name +'State,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
     return string    
 
 def CtorEntries(states):
     string = ""
     for state in states:
-        string += "                     "+state.Name + "State(this),\n"
+        string += state.Name + "State(this),\n"
     return string    
 
 
@@ -156,22 +156,23 @@ def ParseForMarkers(File, States):
     for line in File:
         # Do some regex action on: " // #^ MARKER_NAME "
         if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line) is not None):  
-			# We have a hit - get our marker. legit characters are A-Z, a-z and underscores     
-			MarkerString = re.search(r'[A-Za-z_]+',line,0)        
-			if MarkerString is not None:
-				# We found a valid marker
-				MarkerName = MarkerString.group()
-				MarkerActive = True
-				NewStateString = CreateStringOnMarker(MarkerName, States)
+            # We have a hit - get our marker. legit characters are A-Z, a-z and underscores     
+            MarkerString = re.search(r'[A-Za-z_]+',line,0)        
+            if MarkerString is not None:
+                # We found a valid marker
+                MarkerName = MarkerString.group()
+                MarkerActive = True
+                NewStateString = CreateStringOnMarker(MarkerName, States)
         
         # Look for closing marker
         if (re.compile(r'( *)//( *)\^#').match(line) is not None):
-			if MarkerActive is True:
-				# Add to string file
-				NewFile += NewStateString
-				MarkerActive = False
+            if MarkerActive is True:
+                # Add to string file
+                NewFile += NewStateString
+                MarkerActive = False
             
         NewFile +=line
+        lastline = line
         
     return NewFile      
  
