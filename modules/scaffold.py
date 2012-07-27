@@ -100,7 +100,7 @@ def ScaffoldService(path):
     """ 
         Check for errors in the XML parsing
     """
-    if XMLReference.ErrorFlag is True:
+    if HSMStruct.ErrorFlag is True:
         Print("An serious error occured during XML parsing.\nAborting!", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_XML_PARSING_ERROR
     
