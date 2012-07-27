@@ -36,6 +36,12 @@ from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
 
+
+FRIEND_SPACES       = 32
+DEFINE_SPACES       = 48
+SERVICE_STRING      = 'Service'
+
+global_counter = 0
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     \fn         ReadFromFile()
@@ -67,28 +73,30 @@ def ReadLinesFromFile(path):
 
 
 
-def HeaderEntries(states):
+def HeaderEntries(states, service):
     string = ""
     for state in states:
-        string += r'#include "Template.C' + state.Name + r'State.h"' + "\n"
+        string += r'#include "' + service.Name + '.C' + state.Name + r'State.h"' + "\n"
     return string
 
 def EnumEntries(states):
     string = ""
+    global global_counter
     for state in states:
-        string += state.Name.upper() + "_STATE,\n"
+        string += state.Name.upper() + '_STATE,// ' + str(global_counter) + ' - TODO: Decription\n'
     return string    
     
-def DefineEntries(states):
+def DefineEntries(states, service):
     string = ""
     for state in states:
-        string += r'nsTemplateService::C' + state.Name + 'State\t\t\t\t\t' + state.Name + "State; \n"
+        intend = ' '.rjust(DEFINE_SPACES - ((len(service.Name) + len(SERVICE_STRING) + 5) + (len(state.Name) + 5)))
+        string += r'ns' + service.Name + 'Service::C' + state.Name + 'State' + intend + state.Name + "State; \n"
     return string    
     
-def FriendEntries(states):
+def FriendEntries(states, service):
     string = ""
     for state in states:
-        string += r'friend class    nsTemplateService::C' + state.Name + "State;\n"
+        string += r'friend class    ns' + service.Name + 'Service::C' + state.Name + "State;\n"
     return string    
 
 def InitEntries(states):
@@ -117,16 +125,19 @@ def CtorEntries(states):
     \return     
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def AddNewStatesToFile(Path, States):
+def AddNewStatesToFile(Path, States, service):
     
     File = ReadLinesFromFile(Path)
     
+    if service.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH):
+        service.Name = service.Name.lstrip(ProjectDefines.PROTECTED_STARTS_WITH)
+        
     if File is None:
         Print(__function__ + " : Couldn't read .cc or .h service files! Aborting!\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_INVALID_PARAMETER
     
     # Get modified file after new states were added
-    NewFile = ParseForMarkers(File, States)
+    NewFile = ParseForMarkers(File, States, service)
     
     # Overwrite old file with new
     WriteToFile(Path, NewFile)
@@ -147,13 +158,18 @@ def AddNewStatesToFile(Path, States):
     \return     string that contains new file
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def ParseForMarkers(File, States):
+def ParseForMarkers(File, States, service):
     NewFile = ""
     NewStateString = ""
     MarkerActive = False
+    linecounter = 0
+    linecount1 = 0
+    MarkerName = ""
+    global global_counter
     
     # Scan each line for marker
     for line in File:
+        linecounter = linecounter + 1
         # Do some regex action on: " // #^ MARKER_NAME "
         if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line) is not None):  
             # We have a hit - get our marker. legit characters are A-Z, a-z and underscores     
@@ -162,11 +178,22 @@ def ParseForMarkers(File, States):
                 # We found a valid marker
                 MarkerName = MarkerString.group()
                 MarkerActive = True
-                NewStateString = CreateStringOnMarker(MarkerName, States)
+                linecount1 = linecounter
+
         
         # Look for closing marker
         if (re.compile(r'( *)//( *)\^#').match(line) is not None):
             if MarkerActive is True:
+                whitespace_matcher = re.compile(r'^\s+')
+                match = whitespace_matcher.search(lastline)
+                global_counter = (linecounter - linecount1 - 1)
+                NewStateString = CreateStringOnMarker(MarkerName, States, service)
+                if match is not None:
+                    if len(match.group()) == 1:
+                        length = 4
+                    else:
+                        length = len(match.group())
+                    NewStateString = NewStateString.rjust( length + len(NewStateString)) 
                 # Add to string file
                 NewFile += NewStateString
                 MarkerActive = False
@@ -208,15 +235,15 @@ def WriteToFile(Path, String):
     \return     created string to add to file
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def CreateStringOnMarker(Marker, new_states):  
+def CreateStringOnMarker(Marker, new_states, service):  
     ResultString = {
       r'CTOR_STATES'    :     lambda: CtorEntries(new_states),
       r'INIT_STATES'    :     lambda: InitEntries(new_states),
       r'INITIAL_STATE'  :     lambda: "",
-      r'HEADERS'        :     lambda: HeaderEntries(new_states),
+      r'HEADERS'        :     lambda: HeaderEntries(new_states, service),
       r'ENUMS'          :     lambda: EnumEntries(new_states),
-      r'FRIENDS'        :     lambda: FriendEntries(new_states),
-      r'DEFINES'        :     lambda: DefineEntries(new_states)
+      r'FRIENDS'        :     lambda: FriendEntries(new_states, service),
+      r'DEFINES'        :     lambda: DefineEntries(new_states, service)
     }[Marker.upper()]()
     return ResultString
 
@@ -287,11 +314,11 @@ def AppendStatesToService(service, target_path):
         Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_OKAY
     
-    status = AddNewStatesToFile(h_file_path, new_states)
+    status = AddNewStatesToFile(h_file_path, new_states, service)
     if (status != ProjectFlags.STATUS_OKAY):
         return status
         
-    status = AddNewStatesToFile(cc_file_path, new_states)
+    status = AddNewStatesToFile(cc_file_path, new_states, service)
     if (status != ProjectFlags.STATUS_OKAY):
         return status
     
