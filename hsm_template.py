@@ -42,16 +42,27 @@ from modules.classes import *
 from modules.XML2Class import *
 from modules.scaffold import *
 
-""" This is the secrete to eternal live 1/2 """
+""" Dedicated to Mathis """
+try:
+    from Cheetah.Template import Template
+except ImportError:
+    print("Unable to import Cheetah template module!\n"                     \
+          "Before using this scaffolding service you have to install:\n"    \
+          "\t 1. setuptools\n"                                              \
+          "\t 2. Cheetah\n\n"                                               \
+          "Both can be found in the 'external' folder!\n"                     \
+          "Aborting before any damage could be made!")
+    sys.exit(2)
+          
+    
 
 """
 !!! 
     Each compiled template file needs to have the below code at the 
     very begining directly after "#!/usr/bin/env python" of course 
-    in compination only with the above 'from' include 
+    in combination only with the above 'from' include 
 !!!
 
-#This is the secrete to eternal live 1/2
 import os,sys
 pwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(pwd)
