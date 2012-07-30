@@ -303,7 +303,11 @@ def CreateXMLFromDefault(file_path):
     base_folder = os.path.split(file_path)
     
     if os.path.isdir(base_folder[0]) is False:
-        os.mkdir(base_folder[0])
+        try:
+            os.mkdir(base_folder[0])
+        except OSError as e:
+            print "Unable to create directory ({0} :  {1})".format(e.errno,e.strerror)
+            
 
     """ now create the new file """
     try:
