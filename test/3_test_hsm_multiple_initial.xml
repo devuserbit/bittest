@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     3_test_hsm_multiple_initial.xml
+     
+     Test cases presented here are:
+     
+        1. Multiple initial states
+-->
+
+<hsm_service name="" path="C:\Projects\Tools\HSMTemplateScaffolding\TestService\">
+    <state name="Root">
+        <callbacks><entry/><active/></callbacks>
+        <default_fct> <cmd/> <stdcmd /> <abort /> <reset /> <timer />  </default_fct>
+            
+        <state name="Reset" Initial="True">
+            <initial />
+            <callbacks><active/></callbacks>
+            <default_fct> <cmd /> </default_fct>
+            
+            <state name="Activity1" Dynamic="True">
+                <callbacks> <entry /> <active /> <exit /> </callbacks>
+                <default_fct> <cmd /> <stdcmd /> <abort /> <reset /> <timer /> </default_fct>
+            </state>
+            
+        </state>
+        
+        <state name="Ready" Initial="True">
+            <callbacks><active /></callbacks>
+            <default_fct><cmd /><stdcmd /></default_fct>
+        </state>
+        
+        <state name="Busy" Initial="True">
+            <callbacks> <entry /> <active /> <exit /> </callbacks>
+            <default_fct> <cmd /> <stdcmd /> <abort /> <reset />  <timer /> </default_fct>
+        </state>
+        
+    </state>
+</hsm_service>
+
+
+
