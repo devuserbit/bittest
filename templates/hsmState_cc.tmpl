@@ -52,9 +52,9 @@
 $InsertFileHeader($state_name, $extension, $todo)
 
 \#include "${serv_name}.h"
-\#include "${srv_name}.${state_name}"
+\#include "${srv_name}.${state_name}.h"
 
-using namespace ns${srv_name}${service}
+using namespace ns${srv_name}${service};
 
 ## ############################
 ## OnEntry
@@ -91,7 +91,7 @@ HSM_SVC_STATE_RESPONSE ${state_name}::${callbacks.get($case)}(CServiceMessage *p
 #if $state.Functions.get($fct) == True or $state.Functions.get('all') == True
         case CServiceMessage::$serv_msg_type.get($fct):
         {
-            return On${def_fct.get($fct)}Msg(CServiceMessage *pMsg);
+            return On${def_fct.get($fct)}Msg(pMsg);
         }
 #else
 ## Add to $leftovers to be added at the end

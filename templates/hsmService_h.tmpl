@@ -57,7 +57,7 @@ public:
 #set $intent            = '    '
 #set $space             = ' '.rjust($name_size)
 $InsertClassHeader($params_name, todo, $author, $intent)
-    struct ${params_name}:
+    struct ${params_name}
     {
         INT32U  m_nParameter1;
         INT32U  m_nParameter2;
@@ -68,6 +68,8 @@ ${space} #slurp
         INT32U param2 = 0): m_nParameter1(param1),
 ${space} #slurp
                             m_nParameter2(param2)
+        {
+        }
     
     };
     
