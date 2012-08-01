@@ -80,6 +80,7 @@ DEFAULT_XML_FILE_PATH       = os.getcwd() + "\default_hsm." + CONFIG_FILE_EXTENS
 
 # If True enables additional information output
 VERBOSE                     = False
+PRINT_DISABLED              = False
 
 # If only a default xml should be created then this will be set to True
 CREATE_DEFAULT_XML_ONLY     = False
@@ -319,7 +320,39 @@ def CreateXMLFromDefault(file_path):
         new_fd.write(def_fc)
     
     return True
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         SplitPath()
+
+    \brief      Splits the path for file and folder
+            
+    \params     path - path to file
+
+    \return     File extension found or None
+                
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def SplitPath(path):
     
+    if path is None:
+        return None,None
+    
+    split_path  = os.path.split(command_line_path.m_Path)
+    
+    if len(split_path) < 2:
+        return None, None
+    
+    extension = split_path[1].split(".")
+    
+    if len(extension) < 2:
+        return None, None
+    
+    ret = extension[1].lower()
+    
+    return ret, extension[0]
+    
+
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     \fn         main()
@@ -337,7 +370,7 @@ def main():
     global  xml_file_name_keywords
     
     global CREATE_DEFAULT_XML_ONLY, CONFIG_FILE_EXTENSION
-    global VERBOSE
+    global VERBOSE, PRINT_DISABLED
     
     """ Check to see if Python 2.7 is used """
     if sys.version_info[0] > __required_python_version__[0]        \
@@ -354,7 +387,7 @@ def main():
     arg = sys.argv
     
     if len(arg) > 1:
-        opts, args = getopt.getopt(sys.argv[1:], "nv")
+        opts, args = getopt.getopt(sys.argv[1:], "nvx")
         
         for o,a in opts:
             if o == "-n":
@@ -362,6 +395,9 @@ def main():
             
             if o == "-v":
                 VERBOSE = True
+                
+            if o == "-x":
+                PRINT_DISABLED = True
         
         """ Get the path from the command line """
         if len(args) == 1:
@@ -387,12 +423,14 @@ def main():
             
         else:
             Print("\nPath is missing! Aborting!\n", PrintLevels.CRITICAL)
-            Usage()
+            if PRINT_DISABLED is False:
+                Usage()
             sys.exit(2)
             
     elif len(arg) == 1: 
         Print("\nPath is missing! Aborting!\n", PrintLevels.CRITICAL)
-        Usage()
+        if PRINT_DISABLED is False:
+            Usage()
         sys.exit(2)
     
     """ """"""""""""""""""""""""""""""""""""""""""""""""
@@ -410,7 +448,6 @@ def main():
         xml_file_path.m_Path = command_line_path.m_Path
         xml_file_path.m_PathType = ProjectFlags.PATH_IS_FILE
         
-        
     elif os.path.isdir(command_line_path.m_Path) is True:
         
         """ Path is dir, check for xml files """
@@ -426,56 +463,36 @@ def main():
             
         if xml_file_path.m_Path is None:
             sys.exit(2)
-                
-    else:
-        """ 
-            The file or folder does not exist
-            Only one choice here:
-                - if xml file and -n flag then create it with the default value (also create folder if missing)
-                - if folder do nothing because it does not exist
-        """
-        
-        if CREATE_DEFAULT_XML_ONLY == False:
-            """ Report error that we cannot open what we do not have """
-            Print("Unable to locate the specified file or folder!\nAborting!", PrintLevels.CRITICAL)
-            sys.exit(2)
-        
-        """ Is this a path to a xml file """
-        split_path  = os.path.split(command_line_path.m_Path)
-        file_format = split_path[1].split(".")[1]
-            
-        if file_format is None or split_path is None:
-            Print("You did not specify a proper file path!\n        \
-                   The file path should have a .xml ending!\n      \
-                   Aborting!", PrintLevels.CRITICAL)
-            sys.exit(2)
-            
-        """ Check ending and keywords """
-        if file_format.lower() != CONFIG_FILE_EXTENSION:
-            """ Extension is not what we expected """
-            Print("\nFile extension is wrong!", PrintLevels.CRITICAL)
-            Print("We are expecting following extension: *." + CONFIG_FILE_EXTENSION, PrintLevels.CRITICAL)
-            Print("Aborting!", PrintLevels.CRITICAL)
-            sys.exit(2)
-                
-        if CheckForKeywords(xml_file_name_keywords,split_path[1]) is False:
-            """ No keywords found in the file name """
-            Print("\nFile name contains no keywords! Aborting!\n", PrintLevels.CRITICAL)
-            Print("Please use at least one of the following keywords in the file name:", PrintLevels.CRITICAL)
-            Print(xml_file_name_keywords, PrintLevels.CRITICAL)
-            sys.exit(2)
-            
-                    
-        """ This is a valid name and extension """
+    
+    """ 
+        The file or folder does not exist
+        Only one choice here:
+            - if xml file and -n flag then create it with the default value 
+              (also create folder if missing)
+        If folder do nothing because it does not exist
+    """
+    if xml_file_path.m_Path is None or xml_file_path.m_PathType != ProjectFlags.PATH_IS_FILE:
         xml_file_path.m_Path = command_line_path.m_Path
         xml_file_path.m_PathType = ProjectFlags.PATH_IS_FILE
-                    
-                    
     
-    if xml_file_path.m_Path is None or xml_file_path.m_PathType != ProjectFlags.PATH_IS_FILE:
-        Print("\nFile path is not valid!\nAborting",PrintLevels.CRITICAL)
+    """ Split path and get extension and file name """
+    ext,name = SplitPath(xml_file_path.m_Path)
+    
+    """ Check ending """
+    if ext != CONFIG_FILE_EXTENSION:
+        Print("You did not specify a proper file path!\n"
+              "The file path should have a .xml ending!\n"
+              "Aborting!", PrintLevels.CRITICAL)
         sys.exit(2)
-        
+    
+    """ Check for keywords """
+    if CheckForKeywords(xml_file_name_keywords,name) is False:
+        Print("\nFile name contains no keywords!\n"
+              "Aborting!\n\n"
+              "Please use at least one of the following keywords in the file name:", PrintLevels.CRITICAL)
+        Print(xml_file_name_keywords, PrintLevels.CRITICAL)
+        sys.exit(2)
+    
     if CREATE_DEFAULT_XML_ONLY is True:
         """ If flag is raised and we have a xml file name then create file from default xml"""
         if CreateXMLFromDefault(xml_file_path.m_Path) is False:
@@ -484,15 +501,12 @@ def main():
             sys.exit(0)
                 
     """ """"""""""""""""""""""""""""""""""""""""""""""""
-        Create service
+        Create HSM
         
         Now after we have recieved the hsm service 
         structure we can scaffold the hsm service. 
-        First of all we are going to create the service
-        
     """ """"""""""""""""""""""""""""""""""""""""""""""""
     ScaffoldService(xml_file_path.m_Path)
-    
     
     return 0
     
