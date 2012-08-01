@@ -14,7 +14,6 @@
     
     1. Important conventions:
         
-        - 'C' is not allowed in the hsm_service name attribute
         - 'C', 'HSM', 'Service', 'State', 'hsm_service', 'initial', 'callbacks'  
           are keywords and must not be used in any tag attributes
           
@@ -32,12 +31,13 @@
                                             created only when every other folder is present.
                                             ! This path is lover in priority then the path passed through the command line
                                             interface !
+                                            Note: this should not be a xml file path! It must be the path to a folder!
             
         <state>                             Tag describing a state of the hsm machine
             name=""                         Name of the state
                                             If name is preceded by '!' this means the state is protected
                                             and will not be created. This is usefull when you want to add
-                                            new state to a existing hsm
+                                            new states to a existing hsm
             
             Initial="True"                  Marks the initial state (only accepted inside state tag)
                                             (if by mistake multiple states have initial attributes
