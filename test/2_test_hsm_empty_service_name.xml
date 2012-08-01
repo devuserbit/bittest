@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    
      2_test_hsm_empty_service_name.xml
      
      Test cases presented here are:
      
         1. Empty hsm_service name attribute
-    
 -->
 
 <hsm_service name="" path="C:\Projects\Tools\HSMTemplateScaffolding\TestService\">

@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    
      1_test_hsm_duplicate_states.xml
      
      Test cases presented here are:
      
         1. Duplicate states (unprotected)
         2. Duplicate states (protected)
-    
 -->
 
 <hsm_service name="Template" path="C:\Projects\Tools\HSMTemplateScaffolding\TestService\">
