@@ -338,7 +338,7 @@ def SplitPath(path):
     if path is None:
         return None,None
     
-    split_path  = os.path.split(command_line_path.m_Path)
+    split_path  = os.path.split(path)
     
     if len(split_path) < 2:
         return None, None
