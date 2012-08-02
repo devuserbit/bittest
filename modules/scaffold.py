@@ -101,7 +101,7 @@ def ScaffoldService(path):
         Check for errors in the XML parsing
     """
     if HSMStruct.ErrorFlag is True:
-        Print("An serious error occured during XML parsing.\nAborting!", PrintLevels.CRITICAL)
+        Print("\nAn serious error occured during XML parsing.\nAborting!", PrintLevels.CRITICAL)
         return ProjectFlags.STATUS_XML_PARSING_ERROR
     
     
@@ -124,7 +124,9 @@ def ScaffoldService(path):
         service_name = HSMStruct.Name[1:]
         service_is_protected = True
         
-        AppendStatesToService(HSMStruct, target_folder)
+        ret = AppendStatesToService(HSMStruct, target_folder)
+        if ret != ProjectFlags.STATUS_OKAY:
+            return ret 
     
     else:
         
