@@ -506,7 +506,8 @@ def main():
         Now after we have recieved the hsm service 
         structure we can scaffold the hsm service. 
     """ """"""""""""""""""""""""""""""""""""""""""""""""
-    ScaffoldService(xml_file_path.m_Path)
+    if ScaffoldService(xml_file_path.m_Path) != ProjectFlags.STATUS_OKAY:
+        sys.exit(2)
     
     return 0
     
