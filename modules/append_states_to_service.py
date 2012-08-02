@@ -18,16 +18,24 @@
     
         1.0     17.07.2012      APopescu        Initial version
         1.1     19.07.2012      BMOLL           Make it easy make it pretty and it will work like a charm
+        1.2     02.08.2012      BMOLL           code cleanup to make the project manager happy
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+    COMMON IMPORTS
+""" """"""""""""""""""""""""""""""""""""""""""""""""
 import os,sys
 import re
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+    PATH
+""" """"""""""""""""""""""""""""""""""""""""""""""""
 pwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(pwd)
 
-
 """ """"""""""""""""""""""""""""""""""""""""""""""""
-    Imports
+    PROJECT IMPORTS
 """ """"""""""""""""""""""""""""""""""""""""""""""""
 from hsm_template import VERBOSE
 from hsm_template import Print
@@ -36,80 +44,110 @@ from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
 
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+    DEFINES
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+FRIEND_SPACES           = 32
+ENUM_SPACES             = 34
+DEFINE_SPACES           = 48
+SERVICE_STRING          = 'Service'
+REGEX_MARKER_START      = r'( *)//( *)#\^( *)[A-Za-z]+'
+REGEX_MARKER_END        = r'( *)//( *)\^#'
+REGEX_FIND_MARKER_NAME  = r'[A-Za-z_]+'
 
-FRIEND_SPACES       = 32
-DEFINE_SPACES       = 48
-SERVICE_STRING      = 'Service'
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+    GLOBALS
+""" """"""""""""""""""""""""""""""""""""""""""""""""
+global_line_counter = 0
 
-global_counter = 0
+
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         ReadFromFile()
+    \fn         AppendStatesToService()
 
-    \brief      Read and return file internals
+    \brief      Add new states to a existing HSM service
     
-    \params     path - path to the existing file
+    \params     service - class defining the service as described in the xml
+    
+    \params     target_path - path to the existing HSM service
 
-    \return     sread - the internal of the read file or None
+    \return     SYSSTATUS
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def ReadLinesFromFile(path):
+def AppendStatesToService(service, target_path):
     
-    sread = None
+    __function__    = "AppendStatesToService()"
     
-    if path is None:
-        return sread
+    h_file_path     = None
+    h_file_read     = None
+    cc_file_path    = None
+    cc_file_read    = None
+    new_states      = []
     
-    try:
-        def_fd = open(path, 'r')
-    except IOError as e:
-        print "Unable to open {} ({} : {})".format(path, e.errno, e.strerror)
-        return sread
-    else:
-        sread = def_fd.readlines()
-        def_fd.close()
+    #Sanity check parameters
+    if service is None:
+        Print(__function__ + " : service is None! Aborting!\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
     
-    return sread
-
-
-
-def HeaderEntries(states, service):
-    string = ""
-    for state in states:
-        string += r'#include "' + service.Name + '.C' + state.Name + r'State.h"' + "\n"
-    return string
-
-def EnumEntries(states):
-    string = ""
-    global global_counter
-    for state in states:
-        string += state.Name.upper() + '_STATE,// ' + str(global_counter) + ' - TODO: Decription\n'
-    return string    
+    if service.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
+        Print(__function__ + " : service is not protected! Aborting!\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
+        
+    if os.path.isdir(target_path) is False:
+        Print(__function__ + " : Target path is invalid! Aborting!\n", PrintLevels.CRITICAL)
+        Print(target_path, PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
+        
+    h_file_path     = target_path + '\\' + ProjectDefines.HSM_FILE_PREFIX +     \
+                        service.Name[1:] + ProjectDefines.HSM_FILE_SUFFIX +         \
+                        ProjectDefines.FILE_H_EXTENSION
     
-def DefineEntries(states, service):
-    string = ""
-    for state in states:
-        intend = ' '.rjust(DEFINE_SPACES - ((len(service.Name) + len(SERVICE_STRING) + 5) + (len(state.Name) + 5)))
-        string += r'ns' + service.Name + 'Service::C' + state.Name + 'State' + intend + state.Name + "State; \n"
-    return string    
+    cc_file_path    = target_path + '\\' + ProjectDefines.HSM_FILE_PREFIX +     \
+                        service.Name[1:] + ProjectDefines.HSM_FILE_SUFFIX +         \
+                        ProjectDefines.FILE_CC_EXTENSION
     
-def FriendEntries(states, service):
-    string = ""
-    for state in states:
-        string += r'friend class    ns' + service.Name + 'Service::C' + state.Name + "State;\n"
-    return string    
+    # Are files there?
+    if os.path.isfile(h_file_path) is False:
+        Print(__function__ + " : .h file not found! Aborting!\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
+        
+    if os.path.isfile(cc_file_path) is False:
+        Print(__function__ + " : .cc file not found! Aborting!\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_INVALID_PARAMETER
+    
+    Print("\nScanning for new states...", PrintLevels.INFO)
+    
+    # Create new state list
+    for StateList in service.StateLevelList:
+        for State in StateList:
+            if State.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
+                """ Add to new states list """
+                new_states.append(State)
 
-def InitEntries(states):
-    string = ""
-    for state in states:
-        string += r'nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + state.Parent.Name +'State,' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
-    return string    
+    # Do we have any new states?
+    if len(new_states) == 0:
+        Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
+        return ProjectFlags.STATUS_OKAY
+    
+    # 
+    status, NewHFile = AddNewStatesToFile(h_file_path, new_states, service)
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status
+        
+    status, NewCFile = AddNewStatesToFile(cc_file_path, new_states, service)
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status
 
-def CtorEntries(states):
-    string = ""
-    for state in states:
-        string += state.Name + "State(this),\n"
-    return string    
+    # Overwrite old files with new
+    status = WriteToFile(h_file_path, NewHFile) 
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status
+        
+    status = WriteToFile(cc_file_path, NewCFile)  
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status    
+    
+    return ProjectFlags.STATUS_OKAY   
 
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -122,34 +160,63 @@ def CtorEntries(states):
     
     \params     States - new states
 
-    \return     
+    \return     Status
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def AddNewStatesToFile(Path, States, service):
     
-    File = ReadLinesFromFile(Path)
+    status, StringArray = ReadLinesFromFile(Path)
     
+    if (status != ProjectFlags.STATUS_OKAY):
+        return status, None
+        
     if service.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH):
         service.Name = service.Name.lstrip(ProjectDefines.PROTECTED_STARTS_WITH)
         
-    if File is None:
+    if StringArray is None:
         Print(__function__ + " : Couldn't read .cc or .h service files! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
+        return ProjectFlags.STATUS_INVALID_PARAMETER, None
     
     # Get modified file after new states were added
-    NewFile = ParseForMarkers(File, States, service)
+    NewFileString = ParseForMarkers(StringArray, States, service)
     
-    # Overwrite old file with new
-    WriteToFile(Path, NewFile)
-    
-    return ProjectFlags.STATUS_OKAY
+    return status, NewFileString
 
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         ReadFromFile()
+
+    \brief      Open file from path and return an line array
+    
+    \params     path - path to the existing file
+
+    \return     sread - lines organized in an array
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def ReadLinesFromFile(path):
+    
+    sread = None
+    
+    if path is None:
+        return ProjectFlags.STATUS_COMMON_ERROR, None
+    
+    try:
+        def_fd = open(path, 'r')
+    except IOError as e:
+        print "Unable to open {} ({} : {})".format(path, e.errno, e.strerror)
+        return ProjectFlags.STATUS_COMMON_ERROR, None
+    else:
+        sread = def_fd.readlines()
+        def_fd.close()
+    
+    return ProjectFlags.STATUS_OKAY, sread
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     \fn         ParseForMarkers()
 
-    \brief      parse line array for certain markers
+    \brief      parse each line in given file and serach for desired markers.
+                When found insert new string for each new state.
     
     \params     File - Array of file lines
     
@@ -159,69 +226,114 @@ def AddNewStatesToFile(Path, States, service):
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def ParseForMarkers(File, States, service):
-    NewFile = ""
+    # global line counter var
+    global global_line_counter
+    # String that will contain the new file content
+    NewFileString = ""
+    # Our new string to be insert to file
     NewStateString = ""
+    # Open marker flag
     MarkerActive = False
-    linecounter = 0
-    linecount1 = 0
+    # Keep track of current line number
+    LineCounter = 0
+    # Line of our starting marker
+    LineMarkerStart = 0
+    # Name marker
     MarkerName = ""
-    global global_counter
     
-    # Scan each line for marker
+    # Scan each line for desired Marker
     for line in File:
-        linecounter = linecounter + 1
-        # Do some regex action on: " // #^ MARKER_NAME "
-        if (re.compile(r'( *)//( *)#\^( *)[A-Za-z]+').match(line) is not None):  
-            # We have a hit - get our marker. legit characters are A-Z, a-z and underscores     
-            MarkerString = re.search(r'[A-Za-z_]+',line,0)        
+        LineCounter = LineCounter + 1
+
+        # Look for Starting Marker
+        if RegExStartsWith(REGEX_MARKER_START, line) is not None:
+            # Look for Marker Name
+            MarkerString = RegExSearch(REGEX_FIND_MARKER_NAME, line)        
             if MarkerString is not None:
                 # We found a valid marker
                 MarkerName = MarkerString.group()
+                # Set a flag
                 MarkerActive = True
-                linecount1 = linecounter
+                LineMarkerStart = LineCounter
 
-        
-        # Look for closing marker
-        if (re.compile(r'( *)//( *)\^#').match(line) is not None):
+        # Look for Closing Marker
+        if RegExStartsWith(REGEX_MARKER_END, line) is not None:
+            # Make sure FLag is set
             if MarkerActive is True:
-                whitespace_matcher = re.compile(r'^\s+')
-                match = whitespace_matcher.search(lastline)
-                global_counter = (linecounter - linecount1 - 1)
-                NewStateString = CreateStringOnMarker(MarkerName, States, service)
-                if match is not None:
-                    if len(match.group()) == 1:
-                        length = 4
-                    else:
-                        length = len(match.group())
-                    NewStateString = NewStateString.rjust( length + len(NewStateString)) 
-                # Add to string file
-                NewFile += NewStateString
+                # Update line counter - might be needed within markers
+                global_line_counter = (LineCounter - LineMarkerStart - 1)
+                # Our new string which will be included in our file
+                NewStateString      = CreateStringOnMarker(MarkerName, States, service)
+                # Get leading spaces
+                WhiteSpaces         = GetLeadingWhiteSpaces(LastLine)
+                # Adjust depending on leading white spaces
+                NewStateString      = NewStateString.rjust(WhiteSpaces + len(NewStateString)) 
+                # Add new string to our file string
+                NewFileString += NewStateString
                 MarkerActive = False
             
-        NewFile +=line
-        lastline = line
+        NewFileString +=line
+        # Save last line
+        LastLine = line
         
-    return NewFile      
- 
+    return NewFileString  
+    
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         WriteToFile()
+    \fn         GetLeadingWhiteSpaces()
 
-    \brief      write string to file
+    \brief      get leading white spaces of given stirng
     
-    \params     Path - path to write file to
-    
-    \params     String - string whcih contains new file content
+    \params     string line
 
-    \return     
+    \return     number of white spaces
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def WriteToFile(Path, String):
-    file = open(Path, 'w')
-    file.write(String)
-    file.close()
+def GetLeadingWhiteSpaces(String):
+    whitespace_matcher = re.compile(r'^\s+')
+    match = whitespace_matcher.search(String)
+    if match is not None:
+        WhiteSpacesString = match.group()
+        if len(WhiteSpacesString) == 1:
+            length = 4
+        else:
+            length = len(WhiteSpacesString)    
+        return length
+    else:
+        return 0
 
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+    \fn         RegExSearch()
+
+    \brief      search for string within string
+    
+    \params     string to find
+    
+    \params     line to search in
+
+    \return     regex instance or none
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def RegExSearch(FindString, Line):
+    return re.search(FindString, Line, 0) 
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         RegExStartsWith()
+
+    \brief      search for string at the beginning of string
+    
+    \params     string to find
+    
+    \params     line to search in
+
+    \return     regex instance or none
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def RegExStartsWith(FindString, Line):
+    return re.compile(FindString).match(Line) 
+    
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     \fn         CreateStringOnMarker()
@@ -250,87 +362,143 @@ def CreateStringOnMarker(Marker, new_states, service):
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    \fn         AppendStatesToService()
+    \fn         HeaderEntries()
 
-    \brief      Add new states to a existing HSM service
+    \brief      create string depending on new states
     
-    \params     service - class defining the service as described in the xml
-    
-    \params     target_path - path to the existing HSM service
+    \params     new states and current service
 
-    \return     SYSSTATUS
+    \return     string that contains the new line
             
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-def AppendStatesToService(service, target_path):
-    
-    __function__    = "AppendStatesToService()"
-    
-    h_file_path     = None
-    h_file_read     = None
-    cc_file_path    = None
-    cc_file_read    = None
-    new_states      = []
-    
-    """ Sanity check parameters """
-    if service is None:
-        Print(__function__ + " : service is None! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-    
-    if service.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
-        Print(__function__ + " : service is not protected! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-        
-    if os.path.isdir(target_path) is False:
-        Print(__function__ + " : Target path is invalid! Aborting!\n", PrintLevels.CRITICAL)
-        Print(target_path, PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-        
-    h_file_path     = target_path + '\\' + ProjectDefines.HSM_FILE_PREFIX +     \
-                        service.Name[1:] + ProjectDefines.HSM_FILE_SUFFIX +         \
-                        ProjectDefines.FILE_H_EXTENSION
-    
-    cc_file_path    = target_path + '\\' + ProjectDefines.HSM_FILE_PREFIX +     \
-                        service.Name[1:] + ProjectDefines.HSM_FILE_SUFFIX +         \
-                        ProjectDefines.FILE_CC_EXTENSION
-    
-    """ Are files there? """
-    if os.path.isfile(h_file_path) is False:
-        Print(__function__ + " : .h file not found! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-        
-    if os.path.isfile(cc_file_path) is False:
-        Print(__function__ + " : .cc file not found! Aborting!\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_INVALID_PARAMETER
-    
-    Print("\nScanning for new states...", PrintLevels.INFO)
-    
-    for StateList in service.StateLevelList:
-        for State in StateList:
-            if State.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
-                """ Add to new states list """
-                new_states.append(State)
+def HeaderEntries(states, service):
+    string = ""
+    for state in states:
+        string += r'#include "' + service.Name + '.C' + state.Name + r'State.h"' + "\n"
+    return string
 
-    if len(new_states) == 0:
-        Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         EnumEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def EnumEntries(states):
+    string = ""
+    global global_line_counter
+    for state in states:
+        insert_string = state.Name.upper() + '_STATE,'
+        intend = ' '.rjust(ENUM_SPACES - len(insert_string))
+        string += insert_string + intend + r'// ' + str(global_line_counter) + ' - TODO: Decription\n'
+    return string    
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         DefineEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states and current service
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def DefineEntries(states, service):
+    string = ""
+    for state in states:
+        intend = ' '.rjust(DEFINE_SPACES - ((len(service.Name) + len(SERVICE_STRING) + 5) + (len(state.Name) + 5)))
+        string += r'ns' + service.Name + 'Service::C' + state.Name + 'State' + intend + state.Name + "State; \n"
+    return string    
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         FriendEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states and current service
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def FriendEntries(states, service):
+    string = ""
+    for state in states:
+        string += r'friend class    ns' + service.Name + 'Service::C' + state.Name + "State;\n"
+    return string    
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         InitEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def InitEntries(states):
+    string = ""
+
+    for state in states:
+        parent_state = state.Parent.Name
+        if parent_state.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is True:
+            parent_state = parent_state[1:len(parent_state)]
+        string += r'nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + parent_state +'State, ' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
+    return string    
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         CtorEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def CtorEntries(states):
+    string = ""
+    for state in states:
+        string += state.Name + "State(this),\n"
+    return string    
+
+
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         WriteToFile()
+
+    \brief      write string to file
+    
+    \params     Path - path to write file to
+    
+    \params     String - string whcih contains new file content
+
+    \return     
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def WriteToFile(Path, String):
+    if Path is None:
+        return ProjectFlags.STATUS_COMMON_ERROR
+    
+    try:
+        file = open(Path, 'w')
+    except IOError as e:
+        print "Unable to open {} ({} : {})".format(path, e.errno, e.strerror)
+        return ProjectFlags.STATUS_COMMON_ERROR
+    else:
+        file.write(String)
+        file.close()
         return ProjectFlags.STATUS_OKAY
-    
-    status = AddNewStatesToFile(h_file_path, new_states, service)
-    if (status != ProjectFlags.STATUS_OKAY):
-        return status
         
-    status = AddNewStatesToFile(cc_file_path, new_states, service)
-    if (status != ProjectFlags.STATUS_OKAY):
-        return status
-    
-    return ProjectFlags.STATUS_OKAY
-    
-    
-    """ Write back to file """
-    WriteToFile(cc_file_path,newfile)
-    
-    
-
-    
+             
     
     
     

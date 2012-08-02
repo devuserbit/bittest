@@ -53,6 +53,7 @@ class ProjectFlags:
     
     STATUS_INVALID_PARAMETER    = 190
     STATUS_XML_PARSING_ERROR    = 191
+    STATUS_COMMON_ERROR         = 192
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
