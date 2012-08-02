@@ -191,7 +191,7 @@ class ParseXML:
         if (os.path.isfile(self.XMLPath)):
             self.Parse(self.XMLPath)
         else:
-            self.HandleError("Path to XML not found or invalid"  + PathToXml, True)
+            self.HandleError("Path to XML not found or invalid\n"  + PathToXml, True)
             
     def GetHSMStruct(self):
         return self.HSM
@@ -433,11 +433,11 @@ class ParseXML:
         """ Handle hard and soft errors """
         # Errors
         if ErrorFlag is True:
-            print "XML ERROR: " + ErrorString + " - XML process aborted"
+            print "XML ERROR: " + ErrorString + "\nXML parsing aborted"
             self.HSM.ErrorFlag = True
         #Warnings
         else:
-            print "XML WARNING: " + ErrorString + " - XML process continues"
+            print "XML WARNING: " + ErrorString + "\nXML parsing continues"
             self.HSM.ErrorFlag = False
                               
 if __name__ == "__main__":
