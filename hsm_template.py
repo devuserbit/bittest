@@ -37,11 +37,6 @@ __required_python_version__ = ('2','7')
 """ """"""""""""""""""""""""""""""""""""""""""""""""
 import os, glob, sys, getopt
 
-from modules.search_path_for_files import *
-from modules.classes import *
-from modules.XML2Class import *
-from modules.scaffold import *
-
 """ Dedicated to Mathis """
 try:
     from Cheetah.Template import Template
@@ -53,8 +48,12 @@ except ImportError:
           "Both can be found in the 'external' folder!\n"                     \
           "Aborting before any damage could be made!")
     sys.exit(2)
-          
-    
+
+from modules.search_path_for_files import *
+from modules.classes import *
+from modules.XML2Class import *
+from modules.scaffold import *
+
 
 """
 !!! 
