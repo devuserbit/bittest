@@ -26,6 +26,9 @@
                                                 added error handling,
                                                 error nodes are commented out,
                                                 added status error flag to HSM struct
+        1.7     06.08.2012      BMoll           Error is raised if service name tag is empty,
+                                                If one node occurs twice but one is a sub node of a
+                                                commented node, we now create it
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -202,7 +205,7 @@ class ParseXML:
     def CommentOutNode(self, ParentNode, Node):
         """ Comment out the given node """
         doc = dom.Document()
-        ParentNode.insertBefore(doc.createComment("ERROR FOUND IN THIS NODE. COMMENTED OUT AND NOT USED FOR PARSING. \n" + Node.toxml()), Node)
+        ParentNode.insertBefore(doc.createComment("ERROR FOUND IN THIS NODE. COMMENTED OUT AND NOT USED FOR PARSING. \n\n" + Node.toxml() + "\n\n"), Node)
         ParentNode.removeChild(Node)
         self.HandleError("Node commented out", False)
             
@@ -322,6 +325,9 @@ class ParseXML:
                 state = self.CreateStateFromNode(StateNode, ParentNode, ParentState)
                 if ParentState is not None and state is not None:
                     ParentState.AddChild(state)
+                # if state is None we dont want to dig deeper
+                if state is None:
+                    continue
                 # Recursive call
                 self.DigForGold(StateNode, state)
         # Decrease Nesting Depth
@@ -351,10 +357,10 @@ class ParseXML:
                     self.HSM.Name = TopLevelNode.getAttribute("name")
                     if self.HSM.Name == "":
                         # No name given return error
-                        self.HandleError("No HSM name given", True)
+                        self.HandleError("No HSM name tag in XML given", True)
                         return None
                 else:
-                    self.HandleError("No HSM name given", True)
+                    self.HandleError("No HSM name tag in XML given", True)
                     return None
                 
                 if TopLevelNode.hasAttribute("path"):
