@@ -349,6 +349,10 @@ class ParseXML:
                 # Check for mandatory attribute name
                 if TopLevelNode.hasAttribute("name"):
                     self.HSM.Name = TopLevelNode.getAttribute("name")
+                    if self.HSM.Name == "":
+                        # No name given return error
+                        self.HandleError("No HSM name given", True)
+                        return None
                 else:
                     self.HandleError("No HSM name given", True)
                     return None
