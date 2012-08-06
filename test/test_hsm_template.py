@@ -21,7 +21,7 @@
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-import os , glob
+import os , glob, re
 
 files_to_delete = {'.cc' , '.h'}
 searchable_folders = {'test','external'}
@@ -47,11 +47,11 @@ def run_test(params = '', silent=True):
     return ret
 
 def get_test_case_comment(path):
-    
-    ret = None
+    commentstring = None
+    def_fc = None
     
     if path is None:
-        return ret
+        return commentstring
         
     try:
         def_fd = open(path,'r')
@@ -59,12 +59,40 @@ def get_test_case_comment(path):
         print "Unable to open {0} ({1} : {2})".format(path, e.errno, e.strerror)
         return False
     else:
-        def_fc = def_fd.read()
+        def_fc = def_fd.readlines()
         def_fd.close()
     
-    """ Regex for pattern and get comment """
-    
-    return ret
+    commentstring = DoSomeRegExMagic(def_fc)
+    return commentstring
+
+def RegexAction(expression, string):
+    #pattern = re.compile(expression).match(string) 
+    pattern = re.search(expression, string, 0) 
+    if pattern is not None:
+        return pattern.group()
+    else:
+        return None    
+        
+def DoSomeRegExMagic(lines):
+    startmarker = False
+    commentstring = ""
+    if lines is not None:
+        for line in lines:
+            # Has this line a start marker
+            startstring = RegexAction(r'(<!--)', line)
+            # Has this line a stop marker
+            endstring = RegexAction(r'(-->)', line)
+            # Set markers
+            if startstring is not None:
+                startmarker = True
+                continue
+            if endstring is not None:
+                startmarker = False
+                return commentstring                
+            if startmarker is True:
+                commentstring += line
+    return None
+
     
 
 def run_test_cases():
@@ -97,8 +125,13 @@ def run_test_cases():
     
     for xml_file in test_cases:
         print("-------------------------------------------------------------\n")
-        print("Testing " + xml_file + "\n")
+        
         fname = curr_dir + "\\" + xml_file
+        commentstring = get_test_case_comment(fname)
+        if commentstring is not None:
+            print("Testing " + commentstring + "\n")
+        else:
+            print("Testing... \n")
         
         
         
