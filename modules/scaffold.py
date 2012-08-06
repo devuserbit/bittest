@@ -36,7 +36,6 @@ from XML2Class import HSMStruct
 from XML2Class import ParseXML
 from classes import *
 from append_states_to_service import *
-#~ from Cheetah.Template import Template
 
 """ Import precompiled templates """
 from templates import hsmService_h
