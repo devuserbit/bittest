@@ -43,6 +43,29 @@ def run_test(params = '', silent=True):
             print "\nTest succesfull\n"
         else:
             print "\nTEST FAILED!\n"
+            
+    return ret
+
+def get_test_case_comment(path):
+    
+    ret = None
+    
+    if path is None:
+        return ret
+        
+    try:
+        def_fd = open(path,'r')
+    except IOError as e:
+        print "Unable to open {0} ({1} : {2})".format(path, e.errno, e.strerror)
+        return False
+    else:
+        def_fc = def_fd.read()
+        def_fd.close()
+    
+    """ Regex for pattern and get comment """
+    
+    return ret
+    
 
 def run_test_cases():
     
@@ -64,7 +87,6 @@ def run_test_cases():
     os.chdir(curr_dir)
     
     """ Find all test case xml's starting with numbers """
-    test_cases = []
     test_cases = glob.glob('[1-9]*.xml')
     
     if test_cases is None:
@@ -78,8 +100,17 @@ def run_test_cases():
         print("Testing " + xml_file + "\n")
         fname = curr_dir + "\\" + xml_file
         
-        run_test(fname,False)
         
+        
+        ret = run_test(fname,False)
+        
+        """ If test failed then skip wait for user input """
+        if ret == 0:
+            try:
+                uinp = raw_input("\n\nTest succeeded!\nPlease check files and press enter when ready!")
+            except EOFError:
+                print "Moving on...."
+            
         print("\n-------------------------------------------------------------\n")
 
     
