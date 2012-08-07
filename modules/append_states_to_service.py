@@ -127,7 +127,7 @@ def AppendStatesToService(service, target_path):
     # Do we have any new states?
     if len(new_states) == 0:
         Print(__function__ + " : No new states found! Returning\n", PrintLevels.CRITICAL)
-        return ProjectFlags.STATUS_OKAY
+        return ProjectFlags.STATUS_COMMON_ERROR
     
     # 
     status, NewHFile = AddNewStatesToFile(h_file_path, new_states, service)
