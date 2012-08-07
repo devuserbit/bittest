@@ -80,6 +80,9 @@ class ProjectDefines:
     """ Template file names """
     TPL_BASE_FOLDER_PATH                = "templates\\"
     
+    """ Folder names """
+    STATES_OUTPUT_DIR_NAME              = "States"
+    
     """ HSM defines """
     HSM_FILE_PREFIX                     = "CHSM"
     HSM_FILE_SUFFIX                     = "Service"
