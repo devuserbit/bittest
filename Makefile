@@ -1,6 +1,8 @@
 # Makefile to release project
 # v1.0
 
+GET_CURRENT_SW_VERSION = $(shell python hsm_template.py -?)
+
 CP = cp -r
 RM = rm -r -f
 MK = mkdir
@@ -15,6 +17,14 @@ COMPLETEFOLDERS = external
 CREATEFOLDERS = $(PYFOLDERS)
 # Single files to be copied
 SINGLEFILES = default_hsm.xml hsm_template.py README.txt
+#Name of the release tar file
+RELEASETARNAME = hsm_template_release_$(GET_CURRENT_SW_VERSION).tar
+
+# #################################
+# Git
+# #################################
+# Git - get branch name
+GIT_GET_CURR_BRANCH = $(shell git symbolic-ref -q HEAD | cut -d"/" -f 3)
 
 # Find .cc and .h files
 STATESFOLDER = test/States
@@ -34,7 +44,8 @@ help: welcome
 	@printf "       create    - Create release folder\n"
 	@printf "       remove    - Remove *.cc and *h files, States and release folders\n"
 	@printf "       tar       - Create and copy snapshot .tar into existing release folders\n"
-
+	
+	
 release: welcome clean create copy tar
 
 welcome:    
@@ -88,7 +99,7 @@ copy:
 
 tar:
 	# tar that shit
-	tar -c --file=release.tar release
+	tar -c --file=$(RELEASETARNAME) release
 	$(RM) $(RELEASEFOLDER)/*
-	$(CP) release.tar release
-	$(RM) release.tar
+	$(CP) $(RELEASETARNAME) release
+	$(RM) $(RELEASETARNAME)
