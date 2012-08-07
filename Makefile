@@ -14,18 +14,28 @@ COMPLETEFOLDERS = external
 # Folders to be created before copying
 CREATEFOLDERS = $(PYFOLDERS)
 # Single files to be copied
-SINGLEFILES = default_hsm.xml hsm_template.py 
+SINGLEFILES = default_hsm.xml hsm_template.py README.txt
 
 # Find .cc and .h files
+STATESFOLDER = test/States
 CFILES=$(shell find ./ -name "*.cc") 
 HFILES=$(shell find ./ -name "*.h") 
 
 # Find all py files in given py folders to be copied
 PYFILES := $(foreach DIR, $(PYFOLDERS), $(wildcard $(DIR)/*.py))
 
-.PHONY: release copy create remove tar
+.PHONY: help release copy create clean tar
 
-release: welcome remove create copy tar
+help: welcome 
+	@printf "\n\nFollowing commands are at your disposal:\n\n"
+	@printf "       help      - Display this very usefull funky stylish super-script\n"
+	@printf "       release   - Create folder release and save snapshot as .tar file (recommended)\n"
+	@printf "       copy      - Copy snapshot files into release folder\n"
+	@printf "       create    - Create release folder\n"
+	@printf "       remove    - Remove *.cc and *h files, States and release folders\n"
+	@printf "       tar       - Create and copy snapshot .tar into existing release folders\n"
+
+release: welcome clean create copy tar
 
 welcome:    
 	#                           
@@ -52,11 +62,13 @@ welcome:
 	#
 	#	
 	
-remove:
+clean:
 	# Remove all c files 
 	$(RM) $(CFILES)
 	# Remove all h files
 	$(RM) $(HFILES)
+	#Remove States folder
+	$(RM) $(STATESFOLDER)
 	# Remove old release path
 	$(RM) $(RELEASEFOLDER)
 
@@ -77,5 +89,6 @@ copy:
 tar:
 	# tar that shit
 	tar -c --file=release.tar release
+	$(RM) $(RELEASEFOLDER)/*
 	$(CP) release.tar release
 	$(RM) release.tar
