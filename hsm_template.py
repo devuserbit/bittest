@@ -140,7 +140,7 @@ def Usage():
     print("\t" + __filename__ + " [-n,-v] path")
     print("")
     print("\t\t" + "path" + "          " + "Path to the folder in which the HSM Servie should be created")
-    print("\t\t" + "-n  " + "          " + "Create default hsm description xml in the given folder [-d]")
+    print("\t\t" + "-n  " + "          " + "Create default hsm description xml in the given folder path")
     print("\t\t" + "-v  " + "          " + "Verbose")
     print("\t\t" + "" + ""  + "")
 
