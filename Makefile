@@ -79,9 +79,11 @@ clean:
 	# Remove all h files
 	$(RM) $(HFILES)
 	#Remove States folder
-	$(RM) $(STATESFOLDER)
+	if [ -d $(STATESFOLDER) ]; then $(RM) $(STATESFOLDER); fi
 	# Remove old release path
-	$(RM) $(RELEASEFOLDER)
+	if [ -d $(RELEASEFOLDER) ]; then $(RM) $(RELEASEFOLDER); fi
+	# Checkout test cases
+	$(shell git checkout -- test/[1-9]*.xml)
 
 create:
 	# Create release path
