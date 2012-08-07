@@ -217,6 +217,15 @@ def ScaffoldService(path):
         {Name}.C{State_Name}State.h
         
     """ """"""""""""""""""""""""""""""""""""""""""""""""
+    
+    """ States will be placed into a folder """
+    states_folder = target_folder + '\\' + ProjectDefines.STATES_OUTPUT_DIR_NAME
+    Print("\nCreating : " + states_folder, PrintLevels.INFO)
+    try:
+        os.mkdir(states_folder)
+    except OSError as e:
+        print "Error {0} : {1}".format(e.errno, e.strerror)
+    
     for StateList in HSMStruct.StateLevelList:
         for State in StateList:
             
@@ -225,7 +234,7 @@ def ScaffoldService(path):
                 continue
             
             """ .h """
-            file_name = target_folder + '\\' + service_name + '.' +        \
+            file_name = states_folder + '\\' + service_name + '.' +        \
                         'C' + State.Name + ProjectDefines.HSM_STATE_SUFFIX + \
                         ProjectDefines.FILE_H_EXTENSION
             
@@ -247,7 +256,7 @@ def ScaffoldService(path):
                 return
             
             """ .cc """
-            file_name = target_folder + '\\' + service_name + '.' +        \
+            file_name = states_folder + '\\' + service_name + '.' +        \
                         'C' + State.Name + ProjectDefines.HSM_STATE_SUFFIX + \
                         ProjectDefines.FILE_CC_EXTENSION
             
