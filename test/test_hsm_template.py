@@ -36,6 +36,8 @@ def run_test(params = '', silent=True):
     else:
         fname = "hsm_template.py " + params
     
+    print "hsm_template.py says: \n\n"
+    
     ret = os.system(fname)
     
     if silent is True:
