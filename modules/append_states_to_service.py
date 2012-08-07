@@ -243,7 +243,13 @@ def ParseForMarkers(File, States, service):
     # Name marker
     MarkerName = ""
     DeleteMarker = False
+    InitialMarker = False
     
+    # Lets see if any new state is an initial state
+    for newstate in States:
+        if newstate.Initial is True:
+            InitialMarker = True
+            
     # Scan each line for desired Marker
     for line in File:
         LineCounter = LineCounter + 1
@@ -259,8 +265,10 @@ def ParseForMarkers(File, States, service):
                 MarkerActive = True
                 LineMarkerStart = LineCounter
                 if MarkerName == "INITIAL_STATE":
-                    DeleteMarker = True
-                    NewFileString +=line
+                    if InitialMarker is True:
+                        DeleteMarker = True
+                        NewFileString +=line
+                        InitialMarker = False
 
         # Look for Closing Marker
         if RegExStartsWith(REGEX_MARKER_END, line) is not None:
