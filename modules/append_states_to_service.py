@@ -19,6 +19,7 @@
         1.0     17.07.2012      APopescu        Initial version
         1.1     19.07.2012      BMOLL           Make it easy make it pretty and it will work like a charm
         1.2     02.08.2012      BMOLL           code cleanup to make the project manager happy
+        1.3     07.08.2012      BMOLL           Handle new initial states
     
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -534,4 +535,6 @@ def WriteToFile(Path, String):
     
 
     
+  
+
   

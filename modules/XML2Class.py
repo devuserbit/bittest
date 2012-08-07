@@ -29,6 +29,8 @@
         1.7     06.08.2012      BMoll           Error is raised if service name tag is empty,
                                                 If one node occurs twice but one is a sub node of a
                                                 commented node, we now create it
+        1.8     07.08.2012      BMoll           duplicated states did not get commented out correctly,
+                                                raise error if now initial state is given
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
