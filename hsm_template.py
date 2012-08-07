@@ -142,6 +142,7 @@ def Usage():
     print("\t\t" + "path" + "          " + "Path to the folder in which the HSM Servie should be created")
     print("\t\t" + "-n  " + "          " + "Create default hsm description xml in the given folder path")
     print("\t\t" + "-v  " + "          " + "Verbose")
+    print("\t\t" + "-?  " + "          " + "Print version and exit")
     print("\t\t" + "" + ""  + "")
 
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -380,13 +381,12 @@ def main():
         'and could lead to unexpected behavior!\n'
         'Aborting operation!\n')
         
-    Welcome()
     
     """ Get command line arguments """
     arg = sys.argv
     
     if len(arg) > 1:
-        opts, args = getopt.getopt(sys.argv[1:], "nvx")
+        opts, args = getopt.getopt(sys.argv[1:], "nvx?")
         
         for o,a in opts:
             if o == "-n":
@@ -397,6 +397,10 @@ def main():
                 
             if o == "-x":
                 PRINT_DISABLED = True
+                
+            if o == "-?":
+                print "V" + __version__
+                sys.exit(0)
         
         """ Get the path from the command line """
         if len(args) == 1:
@@ -431,6 +435,9 @@ def main():
         if PRINT_DISABLED is False:
             Usage()
         sys.exit(2)
+    
+    if PRINT_DISABLED is False:
+        Welcome()
     
     """ """"""""""""""""""""""""""""""""""""""""""""""""
         Sanity checks
