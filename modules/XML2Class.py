@@ -186,6 +186,7 @@ class ParseXML:
     Debug = False
     # Hold the DOM reference of the XML
     XMLTree = None
+    XMLRewriteFlag = False
     
     def __init__(self, PathToXml = "", Mode = False):
         """ CTOR """
@@ -208,6 +209,7 @@ class ParseXML:
         ParentNode.insertBefore(doc.createComment("ERROR FOUND IN THIS NODE. COMMENTED OUT AND NOT USED FOR PARSING. \n\n" + Node.toxml() + "\n\n"), Node)
         ParentNode.removeChild(Node)
         self.HandleError("Node commented out", False)
+        self.XMLRewriteFlag = True
             
     def CreateStateFromNode(self, Node, ParentNode, ParentState):
         """ We assume a Node which represents a state - should be verified already.
@@ -314,7 +316,6 @@ class ParseXML:
         """ Look if we got child nodes within ParentNode and determine 
             if this node is a state. If so add it so our HSM structure.
             @RET: nothing"""
-        
         # Increase nesting depth
         self.HSM.NextLevel()
         # Loop through node of ParentNode
@@ -337,7 +338,6 @@ class ParseXML:
     def Parse(self, FilePath): 
         """ Parse XML using DOM module
             @RET: nothing """
-        
         # XMLTree is a class member for later access
         try:
             self.XMLTree = dom.parse(FilePath)
@@ -358,10 +358,10 @@ class ParseXML:
                     if self.HSM.Name == "":
                         # No name given return error
                         self.HandleError("No HSM name tag in XML given", True)
-                        return None
+                        return
                 else:
                     self.HandleError("No HSM name tag in XML given", True)
-                    return None
+                    return
                 
                 if TopLevelNode.hasAttribute("path"):
                     if TopLevelNode.getAttribute("path") == "":
@@ -380,6 +380,18 @@ class ParseXML:
                            
         if(self.Debug is True):
             self.DebugOutput()
+        
+        if self.XMLRewriteFlag is True:
+            self.WriteXML()
+        
+        if self.HSM.InitialState is False:
+            self.HandleError("No initial state given. Aborting...\n", True)
+            return
+        
+    def WriteXML(self):
+        myfile = open(self.XMLPath, "w")
+        myfile.write(self.XMLTree.toxml())
+        myfile.close    
 
 
     def SetXMLInvalid(self):
@@ -404,9 +416,7 @@ class ParseXML:
             if(self.Debug is True):
                 print self.XMLTree.toxml()
             # We are done - write xml to file
-            myfile = open(self.XMLPath, "w")
-            myfile.write(self.XMLTree.toxml())
-            myfile.close
+            self.WriteXML()
 
 
     def LookForStateNodes(self, Node):

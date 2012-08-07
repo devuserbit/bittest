@@ -221,10 +221,11 @@ def ScaffoldService(path):
     """ States will be placed into a folder """
     states_folder = target_folder + '\\' + ProjectDefines.STATES_OUTPUT_DIR_NAME
     Print("\nCreating : " + states_folder, PrintLevels.INFO)
-    try:
-        os.mkdir(states_folder)
-    except OSError as e:
-        print "Error {0} : {1}".format(e.errno, e.strerror)
+    if os.path.isdir(states_folder) is False:
+        try:
+            os.mkdir(states_folder)
+        except OSError as e:
+            print "Error {0} : {1}".format(e.errno, e.strerror)
     
     for StateList in HSMStruct.StateLevelList:
         for State in StateList:

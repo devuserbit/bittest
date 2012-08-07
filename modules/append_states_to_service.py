@@ -120,6 +120,7 @@ def AppendStatesToService(service, target_path):
     # Create new state list
     for StateList in service.StateLevelList:
         for State in StateList:
+            print State.Name
             if State.Name.startswith(ProjectDefines.PROTECTED_STARTS_WITH) is False:
                 """ Add to new states list """
                 new_states.append(State)
@@ -240,6 +241,7 @@ def ParseForMarkers(File, States, service):
     LineMarkerStart = 0
     # Name marker
     MarkerName = ""
+    DeleteMarker = False
     
     # Scan each line for desired Marker
     for line in File:
@@ -255,6 +257,9 @@ def ParseForMarkers(File, States, service):
                 # Set a flag
                 MarkerActive = True
                 LineMarkerStart = LineCounter
+                if MarkerName == "INITIAL_STATE":
+                    DeleteMarker = True
+                    NewFileString +=line
 
         # Look for Closing Marker
         if RegExStartsWith(REGEX_MARKER_END, line) is not None:
@@ -271,8 +276,11 @@ def ParseForMarkers(File, States, service):
                 # Add new string to our file string
                 NewFileString += NewStateString
                 MarkerActive = False
+                DeleteMarker = False
+        
+        if DeleteMarker is not True:
+            NewFileString +=line
             
-        NewFileString +=line
         # Save last line
         LastLine = line
         
@@ -351,7 +359,7 @@ def CreateStringOnMarker(Marker, new_states, service):
     ResultString = {
       r'CTOR_STATES'    :     lambda: CtorEntries(new_states),
       r'INIT_STATES'    :     lambda: InitEntries(new_states),
-      r'INITIAL_STATE'  :     lambda: "",
+      r'INITIAL_STATE'  :     lambda: InitialEntries(new_states),
       r'HEADERS'        :     lambda: HeaderEntries(new_states, service),
       r'ENUMS'          :     lambda: EnumEntries(new_states),
       r'FRIENDS'        :     lambda: FriendEntries(new_states, service),
@@ -453,6 +461,28 @@ def InitEntries(states):
         string += r'nStatus = ' + state.Name + r'State.Init(&PrimaryHSM, &' + parent_state +'State, ' + state.Name.upper() + "_STATE);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n\n"
     return string    
 
+    
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+    \fn         InitialEntries()
+
+    \brief      create string depending on new states
+    
+    \params     new states
+
+    \return     string that contains the new line
+            
+""" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+def InitialEntries(states):
+    string = ""
+
+    for state in states:
+        # Look if any new state is an inital one
+        if state.Initial is True:
+            string += r'nStatus = PrimaryHSM.SetInitialState(this,&' + state.Name + "State);\n    ASSERT_RETURN_BAD_STATUS(nStatus);\n"
+            break
+    return string      
+    
 """ """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     \fn         CtorEntries()
